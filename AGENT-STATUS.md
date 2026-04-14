@@ -52,40 +52,40 @@ Deploy scripts prepared. Human must install Ubuntu + Docker on desktop, then run
 
 ---
 
-## Phase C: Knowledge Pipeline — NOT STARTED
+## Phase C: Knowledge Pipeline — SCRIPTS DONE, FLOWS PENDING
 
-Build the n8n automation flows. Can start once Phase B services are running.
+Scripts ready. n8n flows need desktop running to build.
 
 | What | Status | Instructions |
 |------|--------|-------------|
-| n8n Router flow (tier classification) | Pending | [`agents/router/system-prompt.md`](agents/router/system-prompt.md) |
+| n8n Router flow (tier classification) | Pending (needs desktop) | [`agents/router/system-prompt.md`](agents/router/system-prompt.md) |
 | | | [`agents/router/test-cases.md`](agents/router/test-cases.md) |
 | | | [`agents/router/examples.jsonl`](agents/router/examples.jsonl) |
-| n8n Ingest flow (_inbox → atlas) | Pending | [`agents/ingestor/system-prompt.md`](agents/ingestor/system-prompt.md) |
+| n8n Ingest flow (_inbox → atlas) | Pending (needs desktop) | [`agents/ingestor/system-prompt.md`](agents/ingestor/system-prompt.md) |
 | | | [`agents/ingestor/merge-rules.md`](agents/ingestor/merge-rules.md) |
 | | | [`agents/ingestor/frontmatter-spec.md`](agents/ingestor/frontmatter-spec.md) |
-| n8n RAG query flow | Pending | [`plans/phase-c-pipeline/plan.md`](plans/phase-c-pipeline/plan.md) |
-| Delta re-indexing flow | Pending | [`plans/phase-c-pipeline/plan.md`](plans/phase-c-pipeline/plan.md) |
-| Embedding script | Pending | `scripts/embed.py` (not yet created) |
-| Delta index script | Pending | `scripts/delta-index.py` (not yet created) |
+| n8n RAG query flow | Pending (needs desktop) | [`plans/phase-c-pipeline/plan.md`](plans/phase-c-pipeline/plan.md) |
+| Delta re-indexing flow | Pending (needs desktop) | [`plans/phase-c-pipeline/plan.md`](plans/phase-c-pipeline/plan.md) |
+| Embedding script | **Done** | [`scripts/embed.py`](scripts/embed.py) — batch Ollama → Qdrant with frontmatter payload |
+| Delta index script | **Done** | [`scripts/delta-index.py`](scripts/delta-index.py) — git-diff selective re-embedding + manifest |
 | Checklist | | [`plans/phase-c-pipeline/checklist.md`](plans/phase-c-pipeline/checklist.md) |
 
 ---
 
-## Phase D: Feedback Loops — NOT STARTED
+## Phase D: Feedback Loops — SCRIPTS DONE, AUTOMATION PENDING
 
-Self-improving automation. Can start once Phase C ingest flow works.
+Scripts ready. n8n cron flows and cross-linker need desktop running.
 
 | What | Status | Instructions |
 |------|--------|-------------|
-| Cross-linker (weekly cron) | Pending | [`agents/crosslinker/system-prompt.md`](agents/crosslinker/system-prompt.md) |
+| Cross-linker (weekly cron) | Pending (needs desktop) | [`agents/crosslinker/system-prompt.md`](agents/crosslinker/system-prompt.md) |
 | | | [`agents/crosslinker/graph-analytics.md`](agents/crosslinker/graph-analytics.md) |
-| Decay/lint scanner (monthly cron) | Pending | [`agents/linter/system-prompt.md`](agents/linter/system-prompt.md) |
+| Decay/lint scanner (monthly cron) | Pending (needs desktop) | [`agents/linter/system-prompt.md`](agents/linter/system-prompt.md) |
 | | | [`agents/linter/report-template.md`](agents/linter/report-template.md) |
-| Conversation distiller | Pending | [`agents/distiller/system-prompt.md`](agents/distiller/system-prompt.md) |
+| Conversation distiller | Pending (needs desktop) | [`agents/distiller/system-prompt.md`](agents/distiller/system-prompt.md) |
 | | | [`agents/distiller/quality-filters.md`](agents/distiller/quality-filters.md) |
-| ChromaDB sync script | Pending | `scripts/sync-chromadb.py` (not yet created) |
-| Vault stats script | Pending | `scripts/vault-stats.py` (not yet created) |
+| ChromaDB sync script | **Done** | [`scripts/sync-chromadb.py`](scripts/sync-chromadb.py) — Qdrant → ChromaDB with recent/workspace collections |
+| Vault stats script | **Done** | [`scripts/vault-stats.py`](scripts/vault-stats.py) — CLI health metrics, zero deps, tested |
 | Checklist | | [`plans/phase-d-feedback-loops/checklist.md`](plans/phase-d-feedback-loops/checklist.md) |
 
 ---
@@ -100,6 +100,15 @@ Tuning and optimization. Requires Phases A-D stable.
 | RAG retrieval tuning | Pending | [`plans/phase-e-refinement/plan.md`](plans/phase-e-refinement/plan.md) |
 | Obsidian plugin config | Pending (human) | [`HUMAN-TODO.md`](HUMAN-TODO.md) |
 | Checklist | | [`plans/phase-e-refinement/checklist.md`](plans/phase-e-refinement/checklist.md) |
+
+---
+
+## Documentation — COMPLETE
+
+| What | Status | File |
+|------|--------|------|
+| System architecture (ASCII diagrams) | **Done** | [`docs/architecture.md`](docs/architecture.md) |
+| Operational runbook (17-command cheat sheet) | **Done** | [`docs/runbook.md`](docs/runbook.md) |
 
 ---
 
