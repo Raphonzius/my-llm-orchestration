@@ -39,9 +39,11 @@ services:
       - "5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
+      - ${VAULT_HOST_PATH:-/home/rafae/obsidian-nexus}:/vault  # mount vault for git pull + file access
     environment:
       - N8N_SECURE_COOKIE=false
       - GENERIC_TIMEZONE=America/Sao_Paulo
+      - VAULT_PATH=/vault
     restart: unless-stopped
 
 volumes:
