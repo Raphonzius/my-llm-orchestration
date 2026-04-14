@@ -319,7 +319,7 @@ Cron (daily): Sync ChromaDB "recent" collection
 | Qdrant | Desktop | 6333 | Full-corpus vector store |
 | ChromaDB | Ultrabook | 8000 | Local fast-recall vector store |
 | n8n | Desktop | 5678 | Orchestration workflows |
-| Gitea (or GitHub) | Desktop/Cloud | 3000 | Vault git sync + webhooks |
+| GitHub | Cloud | — | Vault git sync + webhooks |
 
 **Network**: All desktop services exposed on LAN. Ultrabook consumes via REST APIs.
 

@@ -1,5 +1,5 @@
-# Desktop server stack — always-on services
-# Deploy: copy this directory to desktop, then run:
+# Desktop server stack (Ubuntu Server 24.04 LTS) — always-on services
+# Deploy: scp this directory to desktop, then run:
 #   docker compose up -d
 #   bash setup.sh
 
@@ -44,20 +44,7 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
     restart: unless-stopped
 
-  gitea:
-    image: gitea/gitea:latest
-    container_name: gitea
-    ports:
-      - "3000:3000"
-      - "2222:22"
-    volumes:
-      - gitea_data:/data
-    environment:
-      - GITEA__server__ROOT_URL=http://localhost:3000
-    restart: unless-stopped
-
 volumes:
   ollama_data:
   qdrant_data:
   n8n_data:
-  gitea_data:

@@ -1,6 +1,6 @@
 # Phase B: Infrastructure — Verification Checklist
 
-- [ ] `docker compose up -d` starts all 4 services without errors
+- [ ] `docker compose up -d` starts all 3 services without errors
 - [ ] Ollama: `curl http://desktop:11434/api/tags` returns model list
 - [ ] Ollama: gemma4:e2b pulled and responding
 - [ ] Ollama: gemma4:e4b pulled and responding
@@ -15,8 +15,7 @@
 - [ ] n8n: Router flow (Flow 1) imported and active
 - [ ] n8n: Router classifies "What is a mutex?" as simple/engineering
 - [ ] n8n: Router classifies "Design caching strategy" as hard/engineering
-- [ ] Gitea: accessible at `http://desktop:3000`
-- [ ] Gitea: vault repo created
-- [ ] Gitea: webhook to n8n configured
-- [ ] LAN: all services accessible from ultrabook
-- [ ] Firewall: ports 11434, 6333, 5678, 3000 open
+- [ ] GitHub: obsidian-nexus pushed to remote
+- [ ] GitHub: webhook to n8n configured (or n8n polling fallback)
+- [ ] LAN: all services accessible from ultrabook (bash verify.sh <ip>)
+- [ ] Firewall: ports 11434, 6333, 5678 open (ufw)

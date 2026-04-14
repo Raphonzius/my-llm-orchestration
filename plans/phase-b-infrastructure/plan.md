@@ -72,10 +72,12 @@ Create collections with payload indexes for frontmatter filtering:
 
 Each collection needs payload indexes on: `domain`, `type`, `status`, `confidence`, `provenance`, `created`, `modified`.
 
-### B4. Configure Gitea
+### B4. Configure GitHub
 
-- Create vault repository
-- Set up webhook → n8n (push events)
+- Push obsidian-nexus to GitHub (already created)
+- Set up GitHub webhook → n8n (push events)
+  - Note: requires desktop reachable from GitHub (port forward / ngrok / cloudflare tunnel)
+  - Alternative: n8n polling via Schedule trigger → git pull → process
 - Clone vault repo on desktop
 
 ### B5. Configure n8n — Router Flow (Flow 1)
@@ -88,11 +90,10 @@ From ultrabook, verify:
 - `curl http://<desktop-ip>:11434/api/tags` — Ollama models
 - `curl http://<desktop-ip>:6333/collections` — Qdrant
 - `http://<desktop-ip>:5678` — n8n dashboard
-- `http://<desktop-ip>:3000` — Gitea
 
 ### B7. Firewall / network config
 
-- Open ports 11434, 6333, 5678, 3000 on desktop
+- Open ports 11434, 6333, 5678 on desktop (ufw)
 - Consider static IP or hostname for desktop on LAN
 
 ---
@@ -102,6 +103,6 @@ From ultrabook, verify:
 - [ ] `docker compose up -d` starts all 4 services
 - [ ] All Ollama models pulled and responding
 - [ ] Qdrant collections created with payload indexes
-- [ ] Gitea repo created, webhook configured
+- [ ] GitHub webhook configured (or n8n polling as fallback)
 - [ ] n8n router flow classifies test queries correctly
 - [ ] All services accessible from ultrabook over LAN
