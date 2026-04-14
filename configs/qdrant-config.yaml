@@ -1,0 +1,57 @@
+# Qdrant collection schemas
+# Apply via Qdrant REST API: PUT /collections/{name}
+
+collections:
+  atlas:
+    vector_size: 1024  # mxbai-embed-large dimensions
+    distance: Cosine
+    payload_indexes:
+      - field: domain
+        type: keyword
+      - field: type
+        type: keyword
+      - field: status
+        type: keyword
+      - field: provenance
+        type: keyword
+      - field: confidence
+        type: keyword
+      - field: created
+        type: datetime
+      - field: modified
+        type: datetime
+      - field: tags
+        type: keyword
+
+  sources:
+    vector_size: 1024
+    distance: Cosine
+    payload_indexes:
+      - field: domain
+        type: keyword
+      - field: type
+        type: keyword
+      - field: provenance
+        type: keyword
+      - field: created
+        type: datetime
+
+  projects:
+    vector_size: 1024
+    distance: Cosine
+    payload_indexes:
+      - field: domain
+        type: keyword
+      - field: status
+        type: keyword
+      - field: created
+        type: datetime
+
+  areas:
+    vector_size: 1024
+    distance: Cosine
+    payload_indexes:
+      - field: domain
+        type: keyword
+      - field: status
+        type: keyword

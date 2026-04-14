@@ -1,0 +1,13 @@
+{"query": "What is a mutex?", "classification": {"tier": "simple", "domain": ["engineering"], "needs_rag": false, "reasoning_steps": 1, "confidence": "high"}}
+{"query": "Convert 72F to Celsius", "classification": {"tier": "simple", "domain": ["polymath"], "needs_rag": false, "reasoning_steps": 1, "confidence": "high"}}
+{"query": "Summarize the article about async Rust I saved yesterday", "classification": {"tier": "medium", "domain": ["engineering"], "needs_rag": true, "reasoning_steps": 2, "confidence": "high"}}
+{"query": "Write a Python script to parse CSV files", "classification": {"tier": "medium", "domain": ["engineering"], "needs_rag": false, "reasoning_steps": 2, "confidence": "high"}}
+{"query": "Compare Qdrant vs ChromaDB for my multi-device setup", "classification": {"tier": "medium", "domain": ["engineering"], "needs_rag": true, "reasoning_steps": 3, "confidence": "medium"}}
+{"query": "Design the n8n workflow for vault ingestion with error handling", "classification": {"tier": "hard", "domain": ["engineering"], "needs_rag": true, "reasoning_steps": 4, "confidence": "high"}}
+{"query": "Review this architecture decision and suggest improvements", "classification": {"tier": "hard", "domain": ["professional"], "needs_rag": true, "reasoning_steps": 4, "confidence": "high"}}
+{"query": "What patterns have emerged across my last 10 conversations?", "classification": {"tier": "hard", "domain": ["polymath"], "needs_rag": true, "reasoning_steps": 5, "confidence": "high"}}
+{"query": "Turn on the living room lights", "classification": {"tier": "simple", "domain": ["home-automation"], "needs_rag": false, "reasoning_steps": 1, "confidence": "high"}}
+{"query": "Plan the Jarvis voice command architecture", "classification": {"tier": "hard", "domain": ["engineering", "home-automation"], "needs_rag": true, "reasoning_steps": 5, "confidence": "high"}}
+{"query": "What did I decide about the database migration last week?", "classification": {"tier": "medium", "domain": ["professional"], "needs_rag": true, "reasoning_steps": 2, "confidence": "high"}}
+{"query": "List Python string methods for text processing", "classification": {"tier": "simple", "domain": ["engineering"], "needs_rag": false, "reasoning_steps": 1, "confidence": "high"}}
+{"query": "Synthesize my notes on memory systems into a coherent overview", "classification": {"tier": "hard", "domain": ["polymath", "engineering"], "needs_rag": true, "reasoning_steps": 5, "confidence": "high"}}
