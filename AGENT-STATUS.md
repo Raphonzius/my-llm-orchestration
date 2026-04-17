@@ -51,7 +51,8 @@ Stack running on desktop as of 2026-04-17. Desktop: Ryzen 5 5600x / RTX 3050 8GB
 | LAN verification | Ready to run | [`deploy/verify.sh`](deploy/verify.sh) — run from ultrabook |
 | n8n polling flow docs | Ready | [`deploy/n8n-polling-flow.md`](deploy/n8n-polling-flow.md) |
 
-**Desktop IP**: `192.168.0.112`. SSH: `raphonzius@192.168.0.112` (ultrabook only).
+**Desktop IP**: `192.168.0.112`. SSH: `raphonzius@192.168.0.112` (key auth only, ultrabook only).
+SSH hardened: ed25519 key, password auth disabled, drop-in at `/etc/ssh/sshd_config.d/10-nexus-hardening.conf`.
 **Remaining**: run `bash setup.sh` to finish model pulls + clone `obsidian-nexus` on desktop.
 
 ---

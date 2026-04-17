@@ -32,6 +32,12 @@
   - Limine entry added: **CachyOS Nexus (Headless)**
   - At boot: select that entry → headless, Docker stack auto-starts, no KDE/SDDM
   - SSH in at `raphonzius@192.168.0.112`
+- [X] SSH hardened:
+  - ed25519 key pair generated on ultrabook (`~/.ssh/id_ed25519`)
+  - Public key copied to desktop `~/.ssh/authorized_keys`
+  - Password auth disabled via `/etc/ssh/sshd_config.d/10-nexus-hardening.conf`
+  - MobaXterm configured with private key — working
+  - `ssh nexus` alias configured on ultrabook
 - [ ] Clone obsidian-nexus on desktop:
   ```bash
   git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
