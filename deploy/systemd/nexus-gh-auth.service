@@ -2,12 +2,12 @@
 Description=GitHub CLI Auth for Nexus
 After=network-online.target
 Wants=network-online.target
-ConditionPathExists=/etc/nexus/gh-token
+ConditionPathExists=/home/raphonzius/.config/nexus/gh-token
 
 [Service]
 Type=oneshot
 User=raphonzius
-ExecStart=/bin/bash -c 'gh auth login --with-token < /etc/nexus/gh-token'
+ExecStart=/bin/bash -c 'gh auth login --with-token < /home/raphonzius/.config/nexus/gh-token'
 RemainAfterExit=yes
 
 [Install]

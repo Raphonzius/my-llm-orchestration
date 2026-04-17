@@ -8,7 +8,7 @@ set -e
 
 DEPLOY_DIR="$(cd "$(dirname "$0")" && pwd)"
 LIMINE_CONF="/boot/limine.conf"
-NEXUS_CONF_DIR="/etc/nexus"
+NEXUS_CONF_DIR="/home/raphonzius/.config/nexus"
 SYSTEMD_DIR="/etc/systemd/system"
 
 if [ "$EUID" -ne 0 ]; then
@@ -42,7 +42,7 @@ else
   fi
   echo "$GH_TOKEN" > "$NEXUS_CONF_DIR/gh-token"
   chmod 600 "$NEXUS_CONF_DIR/gh-token"
-  chown root:root "$NEXUS_CONF_DIR/gh-token"
+  chown raphonzius:raphonzius "$NEXUS_CONF_DIR/gh-token"
   echo "Token saved to $NEXUS_CONF_DIR/gh-token (root-readable only)."
 fi
 
