@@ -31,7 +31,7 @@
 ## 2. Dual-Machine Architecture
 
 ```
-ULTRABOOK (Samsung Book 4 Ultra)              DESKTOP SERVER (Ubuntu 24.04)
+ULTRABOOK (Samsung Book 4 Ultra)              DESKTOP SERVER (CachyOS)
 Win 11 | RTX 4070 8GB | 32GB DDR5            Ryzen 5 5600x | RTX 3060 12GB | 24GB DDR4
 +--------------------------------------+     +--------------------------------------+
 | Ollama :11434                        |     | Ollama :11434                        |

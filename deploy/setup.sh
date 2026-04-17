@@ -1,5 +1,5 @@
 #!/bin/bash
-# Desktop server setup (Ubuntu Server 24.04 LTS)
+# Desktop server setup (CachyOS — Arch-based)
 # Run AFTER docker compose up -d
 # Usage: bash setup.sh
 set -e

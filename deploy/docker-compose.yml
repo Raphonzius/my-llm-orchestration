@@ -1,4 +1,4 @@
-# Desktop server stack (Ubuntu Server 24.04 LTS) — always-on services
+# Desktop server stack (CachyOS — Arch-based) — always-on services
 # Deploy: scp this directory to desktop, then run:
 #   docker compose up -d
 #   bash setup.sh

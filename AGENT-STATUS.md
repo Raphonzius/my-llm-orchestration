@@ -37,18 +37,21 @@ Vault fully scaffolded and committed.
 
 ## Phase B: Infrastructure — SCRIPTS READY, AWAITING DEPLOY
 
-Deploy scripts prepared. Human must install Ubuntu + Docker on desktop, then run them.
+Deploy scripts prepared. OS **changed from Ubuntu Server → CachyOS** (2026-04-17)
+after repeated Ubuntu installer failures on dual-boot layout. CachyOS is already
+running on desktop with Limine bootloader. Scripts updated for firewalld/pacman.
 
 | What | Status | Files |
 |------|--------|-------|
 | Docker Compose (Ollama+Qdrant+n8n) | Ready to deploy | [`deploy/docker-compose.yml`](deploy/docker-compose.yml) |
 | Model pull + setup script | Ready to deploy | [`deploy/setup.sh`](deploy/setup.sh) |
 | Qdrant collection init | Ready to deploy | [`deploy/init-qdrant.sh`](deploy/init-qdrant.sh) |
-| Ubuntu firewall (ufw) | Ready to deploy | [`deploy/firewall-setup.sh`](deploy/firewall-setup.sh) |
+| Firewall (firewalld / ufw / iptables auto-detect) | Ready to deploy | [`deploy/firewall-setup.sh`](deploy/firewall-setup.sh) |
 | LAN verification | Ready to run | [`deploy/verify.sh`](deploy/verify.sh) — run from ultrabook |
 | n8n polling flow docs | Ready | [`deploy/n8n-polling-flow.md`](deploy/n8n-polling-flow.md) |
 
-**Blocked on**: Human installing Ubuntu Server + Docker + NVIDIA toolkit on desktop.
+**Blocked on**: Human installing Docker + NVIDIA Container Toolkit on CachyOS desktop.
+Desktop IP: `192.168.0.109`.
 
 ---
 

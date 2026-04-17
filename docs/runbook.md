@@ -1,6 +1,6 @@
 # Operational Runbook
 
-Infrastructure: desktop server (Ubuntu 24.04, Docker) + ultrabook (Windows 11).
+Infrastructure: desktop server (CachyOS, Docker) + ultrabook (Windows 11).
 Vault: `obsidian-nexus` git repo, synced via GitHub.
 
 ## 1. Starting and Stopping the Stack
@@ -159,7 +159,7 @@ docker logs n8n --tail 100
 ```
 
 Common issues:
-- Webhook not reachable from GitHub: check firewall (`sudo ufw status`) and port forwarding.
+- Webhook not reachable from GitHub: check firewall (`sudo firewall-cmd --list-all`) and port forwarding.
 - Vault mount stale: `docker compose restart n8n` to remount.
 
 ### Git sync conflicts (vault edited on two machines)

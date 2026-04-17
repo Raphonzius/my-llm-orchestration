@@ -1,5 +1,8 @@
 # Phase B: Infrastructure — Verification Checklist
 
+- [ ] CachyOS: Docker installed (`sudo pacman -S docker docker-compose`)
+- [ ] CachyOS: NVIDIA Container Toolkit installed (`sudo pacman -S nvidia-container-toolkit`)
+- [ ] CachyOS: Docker GPU access verified (`docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi`)
 - [ ] `docker compose up -d` starts all 3 services without errors
 - [ ] Ollama: `curl http://desktop:11434/api/tags` returns model list
 - [ ] Ollama: gemma4:e2b pulled and responding
@@ -18,4 +21,4 @@
 - [ ] GitHub: obsidian-nexus pushed to remote
 - [ ] GitHub: webhook to n8n configured (or n8n polling fallback)
 - [ ] LAN: all services accessible from ultrabook (bash verify.sh <ip>)
-- [ ] Firewall: ports 11434, 6333, 5678 open (ufw)
+- [ ] Firewall: ports 11434, 6333, 6334, 5678 open (firewalld on CachyOS)

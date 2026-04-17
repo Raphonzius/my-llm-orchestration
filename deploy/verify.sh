@@ -65,5 +65,5 @@ echo "=== Results: $pass passed, $fail failed ==="
 if [ $fail -eq 0 ]; then
   echo "All services accessible from ultrabook!"
 else
-  echo "Some services unreachable — check desktop firewall (sudo ufw status)"
+  echo "Some services unreachable — check desktop firewall (sudo firewall-cmd --list-all)"
 fi

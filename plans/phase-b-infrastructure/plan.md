@@ -1,6 +1,8 @@
 # Phase B: Desktop Server Infrastructure
 
-**Goal**: Stand up the always-on desktop server with Docker services: Ollama, Qdrant, n8n, and Gitea. Verify LAN access from ultrabook.
+**Goal**: Stand up the always-on desktop server with Docker services: Ollama, Qdrant, n8n. Verify LAN access from ultrabook.
+
+**OS**: CachyOS (Arch-based). Git sync via GitHub.
 
 **Dependencies**: Phase A complete (vault exists in git).
 **Delegatable to**: Agent with Docker/CLI access on desktop.
@@ -40,17 +42,10 @@ services:
       - N8N_SECURE_COOKIE=false
     restart: unless-stopped
 
-  gitea:
-    image: gitea/gitea:latest
-    ports: ["3000:3000", "2222:22"]
-    volumes: ["gitea_data:/data"]
-    restart: unless-stopped
-
 volumes:
   ollama_data:
   qdrant_data:
   n8n_data:
-  gitea_data:
 ```
 
 ### B2. Pull Ollama models
@@ -93,8 +88,9 @@ From ultrabook, verify:
 
 ### B7. Firewall / network config
 
-- Open ports 11434, 6333, 5678 on desktop (ufw)
-- Consider static IP or hostname for desktop on LAN
+- Open ports 11434, 6333, 6334, 5678 on desktop (firewalld on CachyOS)
+  - `sudo bash deploy/firewall-setup.sh` (auto-detects firewalld/ufw/iptables)
+- Static DHCP lease on router for desktop IP (e.g. 192.168.0.109)
 
 ---
 

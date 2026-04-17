@@ -5,29 +5,47 @@
 
 ---
 
-## Desktop Server (Ubuntu Server 24.04 LTS)
+## Desktop Server (CachyOS — Arch-based)
 
-- [ ] Install Ubuntu Server 24.04 LTS on desktop (Ryzen 5 5600x / RTX 3060)
-- [ ] Install NVIDIA drivers: `sudo apt install nvidia-driver-550` (or latest)
-- [ ] Install Docker Engine: [docs.docker.com/engine/install/ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-- [ ] Install NVIDIA Container Toolkit: [docs.nvidia.com/datacenter/cloud-native](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-  - Required so Docker containers (Ollama) can use the RTX 3060
-- [ ] Set a static IP or hostname for the desktop on your LAN
-  - Edit `/etc/netplan/*.yaml` or assign a static lease in your router
-  - Note the IP — you'll use it everywhere as `DESKTOP_HOST`
-- [ ] Copy `deploy/` to desktop: `scp -r deploy/ user@desktop:~/deploy/`
-- [ ] SSH into desktop and run:
+> **Decision**: using existing CachyOS install instead of dual-booting Ubuntu Server.
+> Reason: saves hours of setup, Docker is OS-agnostic, CachyOS has better hardware
+> optimization and up-to-date NVIDIA drivers.
+
+- [X] CachyOS installed on desktop (Ryzen 5 5600x / RTX 3060)
+- [X] Limine bootloader already working
+- [ ] Verify NVIDIA drivers loaded: `nvidia-smi` should show RTX 3060
+  - If missing: `sudo pacman -S nvidia nvidia-utils` + reboot
+- [ ] Install Docker + Compose:
   ```bash
-  cd ~/deploy
-  sudo bash firewall-setup.sh          # open ports 11434/6333/5678
+  sudo pacman -S docker docker-compose
+  sudo systemctl enable --now docker
+  sudo usermod -aG docker $USER   # then logout/login
+  ```
+- [ ] Install NVIDIA Container Toolkit:
+  ```bash
+  sudo pacman -S nvidia-container-toolkit
+  sudo systemctl restart docker
+  ```
+- [ ] Verify Docker can see the GPU:
+  ```bash
+  docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
+  ```
+  Should show the RTX 3060 from inside the container.
+- [ ] Set a static DHCP lease on your router for the desktop IP
+  - Current IP: `192.168.0.109` (confirm it stays the same after reboot)
+  - Note it — you'll use it everywhere as `DESKTOP_HOST`
+- [ ] Clone both repos on desktop:
+  ```bash
+  git clone https://github.com/Raphonzius/my-llm-orchestration.git ~/llm-orchestration
+  git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
+  ```
+- [ ] Run deploy scripts:
+  ```bash
+  cd ~/llm-orchestration/deploy
+  sudo bash firewall-setup.sh          # auto-detects firewalld, opens 11434/6333/6334/5678
   docker compose up -d                  # start Ollama + Qdrant + n8n
   bash setup.sh                         # pull models, init Qdrant collections
   ```
-- [ ] Clone obsidian-nexus on desktop:
-  ```bash
-  git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
-  ```
-  (needed for n8n polling flow — vault is mounted into n8n container)
 
 ## GitHub
 
@@ -42,19 +60,20 @@
 
 ## Ultrabook Configuration
 
-- [ ] Update `DESKTOP_HOST` IP in these files:
-  - `obsidian-nexus/.env` — replace `192.168.1.XXX`
-  - `obsidian-nexus/.githooks/post-push` — replace `192.168.1.XXX`
+- [ ] Update `DESKTOP_HOST` IP (current: `192.168.0.109`) in these files:
+  - `obsidian-nexus/.env` — replace `192.168.1.XXX` with `192.168.0.109`
+  - `obsidian-nexus/.env.local` — same
+  - `obsidian-nexus/.githooks/post-push` — same
 - [ ] Activate git hook:
   ```bash
   cd C:\Users\rafae\obsidian-nexus
   git config core.hooksPath .githooks
   ```
-- [ ] Install Ollama on ultrabook (for local tier-1 models):
-  - Download from [ollama.com](https://ollama.com)
-  - `ollama pull gemma4:e2b`
-  - `ollama pull gemma4:e4b`
-  - `ollama pull mxbai-embed-large`
+- [x] Install Ollama on ultrabook (for local tier-1 models):
+  - [x] Download from [ollama.com](https://ollama.com)
+  - [x] `ollama pull gemma4:e2b`
+  - [x] `ollama pull gemma4:e4b`
+  - [x] `ollama pull mxbai-embed-large`
 - [ ] Install ChromaDB on ultrabook (for local fast-recall):
   ```bash
   pip install chromadb
