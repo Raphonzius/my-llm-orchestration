@@ -14,38 +14,33 @@
 - [X] CachyOS installed on desktop (Ryzen 5 5600x / RTX 3050 8GB)
 - [X] Limine bootloader already working
 - [X] Verify NVIDIA drivers loaded: driver 595.58.03, CUDA 13.2 — confirmed RTX 3050
+- [X] System updated: `sudo pacman -Syu`
 - [X] Install Docker + Compose
 - [X] Install NVIDIA Container Toolkit
 - [X] Verify Docker can see the GPU — RTX 3050 confirmed inside container
-- [ ] Set a static DHCP lease on your router for the desktop IP
-  - Current IP: `192.168.0.109` (confirm it stays the same after reboot)
-  - Note it — you'll use it everywhere as `DESKTOP_HOST`
-- [ ] Clone both repos on desktop:
+- [X] Static IP set to `192.168.0.112` via NetworkManager (no router config needed)
+- [X] Firewall configured: all Nexus ports + SSH locked to ultrabook (`192.168.0.106`) only
+- [X] Clone repo on desktop: `~/Projects/my-llm-orchestration`
+- [X] Run deploy scripts:
+  - [X] `sudo bash firewall-setup.sh` — ports open
+  - [X] `docker compose up -d` — Ollama + Qdrant + n8n running
+  - [X] Ollama models pulled (gemma4:26b confirmed), Qdrant collections ready
+  - [ ] `bash setup.sh` — run to pull remaining models + finalize Qdrant init
+- [X] Nexus headless boot installed:
+  - systemd units: `nexus.target`, `nexus-compose.service`, `nexus-gh-auth.service`
+  - gh token stored at `~/.config/nexus/gh-token` (no sudo, persists headless)
+  - Limine entry added: **CachyOS Nexus (Headless)**
+  - At boot: select that entry → headless, Docker stack auto-starts, no KDE/SDDM
+  - SSH in at `raphonzius@192.168.0.112`
+- [ ] Clone obsidian-nexus on desktop:
   ```bash
-  git clone https://github.com/Raphonzius/my-llm-orchestration.git ~/Projects/my-llm-orchestration
   git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
   ```
-- [ ] Run deploy scripts:
-  ```bash
-  cd ~/Projects/my-llm-orchestration/deploy
-  sudo bash firewall-setup.sh          # opens 11434/6333/6334/5678
-  docker compose up -d                  # start Ollama + Qdrant + n8n
-  bash setup.sh                         # pull models, init Qdrant collections
-  ```
-- [ ] Install Nexus headless boot (no KDE on server boot):
-  ```bash
-  cd ~/Projects/my-llm-orchestration/deploy
-  sudo bash nexus-boot-setup.sh        # installs systemd units + Limine entry
-  ```
-  Prompts for a GitHub personal access token (repo + read:org scopes).
-  After install: select **CachyOS Nexus (Headless)** in Limine to boot headless.
-  SSH in at `raphonzius@192.168.0.109` — KDE/SDDM will not start.
-  Docker volumes (`ollama_data`, `qdrant_data`, `n8n_data`) persist across reboots automatically.
 
 ## GitHub
 
 - [X] Create repo for obsidian-nexus: `https://github.com/Raphonzius/obsidian-nexus`
-- [ ] Push llm-orchestration: `git push -u origin master`
+- [X] Push llm-orchestration to origin/main
 - [ ] Push obsidian-nexus:
   ```bash
   cd C:\Users\rafae\obsidian-nexus
@@ -55,8 +50,8 @@
 
 ## Ultrabook Configuration
 
-- [ ] Update `DESKTOP_HOST` IP (current: `192.168.0.109`) in these files:
-  - `obsidian-nexus/.env` — replace `192.168.1.XXX` with `192.168.0.109`
+- [ ] Update `DESKTOP_HOST` IP in these files (new IP: `192.168.0.112`):
+  - `obsidian-nexus/.env` — replace placeholder with `192.168.0.112`
   - `obsidian-nexus/.env.local` — same
   - `obsidian-nexus/.githooks/post-push` — same
 - [ ] Activate git hook:
@@ -64,11 +59,11 @@
   cd C:\Users\rafae\obsidian-nexus
   git config core.hooksPath .githooks
   ```
-- [x] Install Ollama on ultrabook (for local tier-1 models):
-  - [x] Download from [ollama.com](https://ollama.com)
-  - [x] `ollama pull gemma4:e2b`
-  - [x] `ollama pull gemma4:e4b`
-  - [x] `ollama pull mxbai-embed-large`
+- [X] Install Ollama on ultrabook (for local tier-1 models):
+  - [X] Download from [ollama.com](https://ollama.com)
+  - [X] `ollama pull gemma4:e2b`
+  - [X] `ollama pull gemma4:e4b`
+  - [X] `ollama pull mxbai-embed-large`
 - [ ] Install ChromaDB on ultrabook (for local fast-recall):
   ```bash
   pip install chromadb
@@ -85,11 +80,11 @@
 
 ## Verification
 
-- [ ] From ultrabook Git Bash: `bash deploy/verify.sh <desktop-ip>`
+- [ ] From ultrabook: `bash deploy/verify.sh 192.168.0.112`
   - Should show: Ollama OK, Qdrant OK, n8n OK
 - [ ] Open Obsidian vault — confirm all folders, templates, vault-health.base render
 - [ ] Test git hook: make a small edit, commit+push, check n8n received webhook
-- [ ] Open n8n dashboard from ultrabook: `http://<desktop-ip>:5678`
+- [ ] Open n8n dashboard from ultrabook: `http://192.168.0.112:5678`
 
 ---
 

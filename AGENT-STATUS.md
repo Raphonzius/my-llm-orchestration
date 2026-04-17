@@ -35,23 +35,24 @@ Vault fully scaffolded and committed.
 
 ---
 
-## Phase B: Infrastructure — SCRIPTS READY, AWAITING DEPLOY
+## Phase B: Infrastructure — DEPLOYED ✓
 
-Deploy scripts prepared. OS **changed from Ubuntu Server → CachyOS** (2026-04-17)
-after repeated Ubuntu installer failures on dual-boot layout. CachyOS is already
-running on desktop with Limine bootloader. Scripts updated for firewalld/pacman.
+Stack running on desktop as of 2026-04-17. Desktop: Ryzen 5 5600x / RTX 3050 8GB / CachyOS.
 
 | What | Status | Files |
 |------|--------|-------|
-| Docker Compose (Ollama+Qdrant+n8n) | Ready to deploy | [`deploy/docker-compose.yml`](deploy/docker-compose.yml) |
-| Model pull + setup script | Ready to deploy | [`deploy/setup.sh`](deploy/setup.sh) |
-| Qdrant collection init | Ready to deploy | [`deploy/init-qdrant.sh`](deploy/init-qdrant.sh) |
-| Firewall (firewalld / ufw / iptables auto-detect) | Ready to deploy | [`deploy/firewall-setup.sh`](deploy/firewall-setup.sh) |
+| Docker Compose (Ollama+Qdrant+n8n) | **Running** | [`deploy/docker-compose.yml`](deploy/docker-compose.yml) |
+| Model pull + setup script | Partially done (gemma4:26b pulled) | [`deploy/setup.sh`](deploy/setup.sh) — run to finish |
+| Qdrant collection init | **Done** (4 collections: atlas/sources/projects/areas) | [`deploy/init-qdrant.sh`](deploy/init-qdrant.sh) |
+| Firewall | **Done** — ufw, all ports locked to ultrabook `192.168.0.106` | [`deploy/firewall-setup.sh`](deploy/firewall-setup.sh) |
+| Static IP | **Done** — `192.168.0.112` via NetworkManager | [`deploy/network-setup.sh`](deploy/network-setup.sh) |
+| Nexus headless boot | **Done** — Limine entry + systemd units installed | [`deploy/nexus-boot-setup.sh`](deploy/nexus-boot-setup.sh) |
+| gh auth (headless) | **Done** — token at `~/.config/nexus/gh-token` | [`deploy/systemd/nexus-gh-auth.service`](deploy/systemd/nexus-gh-auth.service) |
 | LAN verification | Ready to run | [`deploy/verify.sh`](deploy/verify.sh) — run from ultrabook |
 | n8n polling flow docs | Ready | [`deploy/n8n-polling-flow.md`](deploy/n8n-polling-flow.md) |
 
-**Blocked on**: Human installing Docker + NVIDIA Container Toolkit on CachyOS desktop.
-Desktop IP: `192.168.0.109`.
+**Desktop IP**: `192.168.0.112`. SSH: `raphonzius@192.168.0.112` (ultrabook only).
+**Remaining**: run `bash setup.sh` to finish model pulls + clone `obsidian-nexus` on desktop.
 
 ---
 
