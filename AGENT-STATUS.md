@@ -35,7 +35,7 @@ Vault fully scaffolded and committed.
 
 ---
 
-## Phase B: Infrastructure — DEPLOYED ✓
+## Phase B: Infrastructure — COMPLETE ✓
 
 Stack running on desktop as of 2026-04-17. Desktop: Ryzen 5 5600x / RTX 3050 8GB / CachyOS.
 
@@ -53,7 +53,7 @@ Stack running on desktop as of 2026-04-17. Desktop: Ryzen 5 5600x / RTX 3050 8GB
 
 **Desktop IP**: `192.168.0.112`. SSH: `raphonzius@192.168.0.112` (key auth only, ultrabook only).
 SSH hardened: ed25519 key, password auth disabled, drop-in at `/etc/ssh/sshd_config.d/10-nexus-hardening.conf`.
-**Remaining**: run `bash setup.sh` to finish model pulls + clone `obsidian-nexus` on desktop.
+Verification passed: Ollama OK, Qdrant OK, n8n OK.
 
 ---
 

@@ -24,8 +24,8 @@
 - [X] Run deploy scripts:
   - [X] `sudo bash firewall-setup.sh` — ports open
   - [X] `docker compose up -d` — Ollama + Qdrant + n8n running
-  - [X] Ollama models pulled (gemma4:26b confirmed), Qdrant collections ready
-  - [ ] `bash setup.sh` — run to pull remaining models + finalize Qdrant init
+  - [X] `bash setup.sh` — models pulled, Qdrant collections initialized
+  - [X] `bash verify.sh 192.168.0.112` — Ollama OK, Qdrant OK, n8n OK
 - [X] Nexus headless boot installed:
   - systemd units: `nexus.target`, `nexus-compose.service`, `nexus-gh-auth.service`
   - gh token stored at `~/.config/nexus/gh-token` (no sudo, persists headless)
@@ -86,8 +86,7 @@
 
 ## Verification
 
-- [ ] From ultrabook: `bash deploy/verify.sh 192.168.0.112`
-  - Should show: Ollama OK, Qdrant OK, n8n OK
+- [X] From ultrabook: `bash deploy/verify.sh 192.168.0.112` — all passed
 - [ ] Open Obsidian vault — confirm all folders, templates, vault-health.base render
 - [ ] Test git hook: make a small edit, commit+push, check n8n received webhook
 - [ ] Open n8n dashboard from ultrabook: `http://192.168.0.112:5678`
