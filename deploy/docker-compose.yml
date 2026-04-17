@@ -1,0 +1,52 @@
+# Desktop server stack (CachyOS — Arch-based) — always-on services
+# Deploy: scp this directory to desktop, then run:
+#   docker compose up -d
+#   bash setup.sh
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ${VAULT_HOST_PATH:-/home/rafae/obsidian-nexus}:/vault  # mount vault for git pull + file access
+    environment:
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - VAULT_PATH=/vault
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  qdrant_data:
+  n8n_data:

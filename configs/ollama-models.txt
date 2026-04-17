@@ -1,0 +1,10 @@
+# Models to pull on desktop server
+gemma4:e2b
+gemma4:e4b
+gemma4:27b
+mxbai-embed-large
+
+# Models to pull on ultrabook
+# gemma4:e2b
+# gemma4:e4b
+# mxbai-embed-large
