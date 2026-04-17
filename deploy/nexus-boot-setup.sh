@@ -29,7 +29,7 @@ echo "=== Setting up GitHub token ==="
 mkdir -p "$NEXUS_CONF_DIR"
 if [ -f "$NEXUS_CONF_DIR/gh-token" ]; then
   echo "Token already exists at $NEXUS_CONF_DIR/gh-token — skipping."
-  echo "To replace: sudo bash -c 'gh auth token > /etc/nexus/gh-token && chmod 600 /etc/nexus/gh-token'"
+  echo "To replace: gh auth token > ~/.config/nexus/gh-token"
 else
   # Try to extract from active gh session first
   GH_TOKEN=$(sudo -u raphonzius gh auth token 2>/dev/null || true)
@@ -77,5 +77,5 @@ fi
 echo ""
 echo "=== Done ==="
 echo "At next boot, select 'CachyOS Nexus (Headless)' in the Limine menu."
-echo "KDE will NOT start. SSH in at: ssh raphonzius@$(ip route get 1 2>/dev/null | awk '{print $NF; exit}')"
+echo "KDE will NOT start. SSH in at: ssh raphonzius@$(ip -4 addr show scope global | awk '/inet/{print $2}' | cut -d/ -f1 | head -1)"
 echo "Services: Ollama :11434 | Qdrant :6333 | n8n :5678"
