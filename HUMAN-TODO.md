@@ -37,7 +37,15 @@
   - Public key copied to desktop `~/.ssh/authorized_keys`
   - Password auth disabled via `/etc/ssh/sshd_config.d/10-nexus-hardening.conf`
   - MobaXterm configured with private key — working
-  - `ssh nexus` alias configured on ultrabook
+  - `ssh nexus` alias + LocalForward tunnels configured in `~/.ssh/config`
+  - Docker services bound to `127.0.0.1` only — inaccessible from LAN
+  - Tunnel ports on ultrabook: `21434` (Ollama), `26333/26334` (Qdrant), `25678` (n8n)
+- [ ] Set up autossh persistent tunnel (auto-reconnects on network drop):
+  ```bash
+  scoop install autossh      # in Git Bash (requires Scoop)
+  autossh -M 0 -fN nexus     # start tunnel in background
+  ```
+  Then add to Windows Task Scheduler to run at logon.
 - [ ] Clone obsidian-nexus on desktop:
   ```bash
   git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
@@ -89,7 +97,7 @@
 - [X] From ultrabook: `bash deploy/verify.sh 192.168.0.112` — all passed
 - [ ] Open Obsidian vault — confirm all folders, templates, vault-health.base render
 - [ ] Test git hook: make a small edit, commit+push, check n8n received webhook
-- [ ] Open n8n dashboard from ultrabook: `http://192.168.0.112:5678`
+- [ ] Open n8n dashboard from ultrabook: `http://localhost:25678` (requires active SSH tunnel)
 
 ---
 

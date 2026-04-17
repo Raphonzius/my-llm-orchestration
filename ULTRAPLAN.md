@@ -16,7 +16,7 @@ User query → gemma4:e2b (router) → classifies complexity + domain
               ┌───────────────────────┼──────────────────────┐
               ↓                       ↓                      ↓
         Simple/Fast             Medium/Local            Hard/Reasoning
-      gemma4:e4b              gemma4:27b               Claude Pro API
+      gemma4:e4b              gemma4:26b               Claude Pro API
       (ultrabook)             (desktop GPU)            (cloud)
       ~80% of tasks           local execution          planning, judgment,
       drafts, lookup,         code gen, analysis,      synthesis, final
@@ -208,7 +208,7 @@ This is the core innovation — the vault gets smarter with every interaction.
 ```
 Raw content → _inbox/
      ↓
-gemma4:27b (desktop) processes:
+gemma4:26b (desktop) processes:
   1. Extract entities, concepts, patterns
   2. Check atlas/ for existing notes on same topics
   3. MERGE into existing notes (update, enrich) or CREATE new ones
@@ -277,7 +277,7 @@ Self-hosted on desktop. Key flows:
 ```
 Webhook → gemma4:e2b classify → route to tier
   → Tier 1 (gemma4:e4b on ultrabook via LAN)
-  → Tier 2 (gemma4:27b on desktop)
+  → Tier 2 (gemma4:26b on desktop)
   → Tier 3 (Claude API)
   → Return response + log interaction
 ```
@@ -312,16 +312,18 @@ Cron (daily): Sync ChromaDB "recent" collection
 
 ## 7. Infrastructure Summary
 
-| Service | Runs on | Port | Purpose |
-|---------|---------|------|---------|
-| Ollama | Desktop | 11434 | LLM inference (gemma4:27b, mxbai-embed-large) |
-| Ollama | Ultrabook | 11434 | LLM inference (gemma4:e2b, gemma4:e4b) |
-| Qdrant | Desktop | 6333 | Full-corpus vector store |
-| ChromaDB | Ultrabook | 8000 | Local fast-recall vector store |
-| n8n | Desktop | 5678 | Orchestration workflows |
-| GitHub | Cloud | — | Vault git sync + webhooks |
+All Docker services on the desktop are bound to `127.0.0.1` only — not exposed on LAN. The ultrabook connects exclusively via `autossh` SSH tunnels (ed25519 key auth, password auth disabled).
 
-**Network**: All desktop services exposed on LAN. Ultrabook consumes via REST APIs.
+| Service | Runs on | Desktop bind | Ultrabook access (tunnel) | Purpose |
+|---------|---------|-------------|--------------------------|---------|
+| Ollama | Desktop | `127.0.0.1:11434` | `localhost:21434` | LLM inference (gemma4:26b, mxbai-embed-large) |
+| Ollama | Ultrabook | `localhost:11434` | — (local, no tunnel) | LLM inference (gemma4:e2b, gemma4:e4b) |
+| Qdrant | Desktop | `127.0.0.1:6333/6334` | `localhost:26333/26334` | Full-corpus vector store |
+| ChromaDB | Ultrabook | `localhost:8000` | — (local, no tunnel) | Local fast-recall vector store |
+| n8n | Desktop | `127.0.0.1:5678` | `localhost:25678` | Orchestration workflows |
+| GitHub | Cloud | — | — | Vault git sync + webhooks |
+
+**Network**: Desktop services inaccessible from LAN. Ultrabook reaches them only through `autossh` tunnel authenticated by ed25519 private key. No active tunnel = no access.
 
 ---
 
@@ -574,7 +576,7 @@ This dashboard gives you at-a-glance visibility into:
 
 ### Phase B: Desktop Server
 1. Docker compose: Ollama + Qdrant + n8n + Gitea
-2. Pull models: gemma4:e2b, gemma4:e4b, gemma4:27b, mxbai-embed-large
+2. Pull models: gemma4:e2b, gemma4:e4b, gemma4:26b, mxbai-embed-large
 3. Configure n8n router flow (Flow 1)
 4. Test LAN access from ultrabook
 
@@ -617,9 +619,9 @@ After Phase A:
 - [ ] Git push/pull works between ultrabook and remote
 
 After Phase B:
-- [ ] `curl http://desktop:11434/api/tags` returns Ollama models
-- [ ] `curl http://desktop:6333/collections` returns Qdrant collections
-- [ ] n8n dashboard accessible at `http://desktop:5678`
+- [X] `curl http://localhost:21434/api/tags` returns Ollama models (via SSH tunnel)
+- [X] `curl http://localhost:26333/collections` returns Qdrant collections (via SSH tunnel)
+- [X] n8n dashboard accessible at `http://localhost:25678` (via SSH tunnel)
 - [ ] Router flow correctly classifies test queries into 3 tiers
 
 After Phase C:
@@ -673,7 +675,7 @@ llm-orchestration/
 │   │   └── test-cases.md                # Validation test queries
 │   │
 │   ├── ingestor/
-│   │   ├── system-prompt.md             # gemma4:27b extraction prompt
+│   │   ├── system-prompt.md             # gemma4:26b extraction prompt
 │   │   ├── merge-rules.md              # When to merge vs create new notes
 │   │   └── frontmatter-spec.md          # Canonical frontmatter reference
 │   │
