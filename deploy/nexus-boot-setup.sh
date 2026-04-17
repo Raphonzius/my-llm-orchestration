@@ -29,11 +29,17 @@ echo "=== Setting up GitHub token ==="
 mkdir -p "$NEXUS_CONF_DIR"
 if [ -f "$NEXUS_CONF_DIR/gh-token" ]; then
   echo "Token already exists at $NEXUS_CONF_DIR/gh-token — skipping."
-  echo "To replace it: sudo bash -c 'echo YOUR_TOKEN > /etc/nexus/gh-token && chmod 600 /etc/nexus/gh-token'"
+  echo "To replace: sudo bash -c 'gh auth token > /etc/nexus/gh-token && chmod 600 /etc/nexus/gh-token'"
 else
-  echo "Paste your GitHub personal access token (needs repo + read:org scopes),"
-  echo "then press Enter:"
-  read -r GH_TOKEN
+  # Try to extract from active gh session first
+  GH_TOKEN=$(sudo -u raphonzius gh auth token 2>/dev/null || true)
+  if [ -n "$GH_TOKEN" ]; then
+    echo "Extracted token from active gh session."
+  else
+    echo "No active gh session found. Paste your GitHub personal access token"
+    echo "(needs repo + read:org scopes), then press Enter:"
+    read -r GH_TOKEN
+  fi
   echo "$GH_TOKEN" > "$NEXUS_CONF_DIR/gh-token"
   chmod 600 "$NEXUS_CONF_DIR/gh-token"
   chown root:root "$NEXUS_CONF_DIR/gh-token"
