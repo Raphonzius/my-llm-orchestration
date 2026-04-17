@@ -1,0 +1,7 @@
+[Unit]
+Description=Nexus Headless Server (Ollama + Qdrant + n8n)
+Documentation=man:systemd.target(5)
+Requires=multi-user.target
+After=multi-user.target
+Conflicts=graphical.target rescue.target rescue.service
+AllowIsolate=yes

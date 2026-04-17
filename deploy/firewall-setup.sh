@@ -46,7 +46,7 @@ case "$FIREWALL" in
     ;;
 
   ufw)
-    ufw allow OpenSSH comment "SSH access"
+    ufw allow 22/tcp comment "SSH access"
     ufw allow 11434/tcp comment "Ollama LLM API"
     ufw allow 6333/tcp comment "Qdrant REST API"
     ufw allow 6334/tcp comment "Qdrant gRPC"
@@ -77,4 +77,4 @@ case "$FIREWALL" in
 esac
 
 echo ""
-echo "Done. Desktop IP: $(hostname -I | awk '{print $1}')"
+echo "Done. Desktop IP: $(ip route get 1 | awk '{print $NF; exit}' 2>/dev/null || hostname -i)"

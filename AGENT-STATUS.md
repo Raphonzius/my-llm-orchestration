@@ -7,7 +7,7 @@
 
 ## Project overview
 
-3-tier AI orchestration (gemma4 local → gemma4 desktop → Claude cloud) with an Obsidian vault (`obsidian-nexus`) as persistent knowledge layer. Two repos:
+3-tier AI orchestration (gemma4 local → gemma4 desktop → Claude cloud) with an Obsidian vault (`obsidian-nexus`) as persistent knowledge layer. Desktop: Ryzen 5 5600x / RTX 3050 8GB / CachyOS. Two repos:
 
 | Repo | Path | Purpose |
 |------|------|---------|

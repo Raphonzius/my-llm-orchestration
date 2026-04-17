@@ -11,41 +11,36 @@
 > Reason: saves hours of setup, Docker is OS-agnostic, CachyOS has better hardware
 > optimization and up-to-date NVIDIA drivers.
 
-- [X] CachyOS installed on desktop (Ryzen 5 5600x / RTX 3060)
+- [X] CachyOS installed on desktop (Ryzen 5 5600x / RTX 3050 8GB)
 - [X] Limine bootloader already working
-- [ ] Verify NVIDIA drivers loaded: `nvidia-smi` should show RTX 3060
-  - If missing: `sudo pacman -S nvidia nvidia-utils` + reboot
-- [ ] Install Docker + Compose:
-  ```bash
-  sudo pacman -S docker docker-compose
-  sudo systemctl enable --now docker
-  sudo usermod -aG docker $USER   # then logout/login
-  ```
-- [ ] Install NVIDIA Container Toolkit:
-  ```bash
-  sudo pacman -S nvidia-container-toolkit
-  sudo systemctl restart docker
-  ```
-- [ ] Verify Docker can see the GPU:
-  ```bash
-  docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
-  ```
-  Should show the RTX 3060 from inside the container.
+- [X] Verify NVIDIA drivers loaded: driver 595.58.03, CUDA 13.2 — confirmed RTX 3050
+- [X] Install Docker + Compose
+- [X] Install NVIDIA Container Toolkit
+- [X] Verify Docker can see the GPU — RTX 3050 confirmed inside container
 - [ ] Set a static DHCP lease on your router for the desktop IP
   - Current IP: `192.168.0.109` (confirm it stays the same after reboot)
   - Note it — you'll use it everywhere as `DESKTOP_HOST`
 - [ ] Clone both repos on desktop:
   ```bash
-  git clone https://github.com/Raphonzius/my-llm-orchestration.git ~/llm-orchestration
+  git clone https://github.com/Raphonzius/my-llm-orchestration.git ~/Projects/my-llm-orchestration
   git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
   ```
 - [ ] Run deploy scripts:
   ```bash
-  cd ~/llm-orchestration/deploy
-  sudo bash firewall-setup.sh          # auto-detects firewalld, opens 11434/6333/6334/5678
+  cd ~/Projects/my-llm-orchestration/deploy
+  sudo bash firewall-setup.sh          # opens 11434/6333/6334/5678
   docker compose up -d                  # start Ollama + Qdrant + n8n
   bash setup.sh                         # pull models, init Qdrant collections
   ```
+- [ ] Install Nexus headless boot (no KDE on server boot):
+  ```bash
+  cd ~/Projects/my-llm-orchestration/deploy
+  sudo bash nexus-boot-setup.sh        # installs systemd units + Limine entry
+  ```
+  Prompts for a GitHub personal access token (repo + read:org scopes).
+  After install: select **CachyOS Nexus (Headless)** in Limine to boot headless.
+  SSH in at `raphonzius@192.168.0.109` — KDE/SDDM will not start.
+  Docker volumes (`ollama_data`, `qdrant_data`, `n8n_data`) persist across reboots automatically.
 
 ## GitHub
 

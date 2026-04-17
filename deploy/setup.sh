@@ -28,7 +28,7 @@ echo ""
 
 # --- B2: Pull Ollama models ---
 echo "[2/4] Pulling Ollama models (this may take a while)..."
-models=("gemma4:e2b" "gemma4:e4b" "gemma4:27b" "mxbai-embed-large")
+models=("gemma4:e2b" "gemma4:e4b" "gemma4:26b" "mxbai-embed-large")
 for model in "${models[@]}"; do
   echo "  Pulling $model..."
   docker exec ollama ollama pull "$model" 2>&1 | tail -1
