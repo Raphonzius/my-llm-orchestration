@@ -32,12 +32,15 @@ echo "Static IP set."
 echo ""
 echo "=== Locking Nexus ports to ultrabook ($ULTRABOOK_IP) only ==="
 
-# Remove existing broad rules for Nexus ports
-for PORT in 11434 6333 6334 5678; do
+# Remove existing broad rules for Nexus ports and SSH
+for PORT in 11434 6333 6334 5678 22; do
   ufw delete allow ${PORT}/tcp 2>/dev/null || true
 done
+ufw delete allow OpenSSH 2>/dev/null || true
+ufw delete allow 22/tcp  2>/dev/null || true
 
 # Allow only from ultrabook
+ufw allow from "$ULTRABOOK_IP" to any port 22    proto tcp comment "SSH — ultrabook only"
 ufw allow from "$ULTRABOOK_IP" to any port 11434 proto tcp comment "Ollama — ultrabook only"
 ufw allow from "$ULTRABOOK_IP" to any port 6333  proto tcp comment "Qdrant REST — ultrabook only"
 ufw allow from "$ULTRABOOK_IP" to any port 6334  proto tcp comment "Qdrant gRPC — ultrabook only"
