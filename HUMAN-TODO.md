@@ -61,6 +61,76 @@
 
 ---
 
+## 🪨 BIG HUNT 2 — ONE SKILL CAVE, ALL TRIBE SHARE
+
+> Caveman say: every model tribe (Claude, Gemma, Ollama, future LLaMA) must read same
+> stone tablet. One cave of skills. One cave of knowledge. No repeat work. No
+> contradiction. Obsidian = human eye see. Qdrant = model brain smell.
+
+**Goal:** single canonical skills + hooks repo that all agents consume. Vault (Obsidian) is human-navigable truth. Qdrant is vector-searchable projection of same truth. No model maintains its own private knowledge store.
+
+### Step 1 — Canonical skill definitions in vault `.skills/`
+
+Skill files already scaffolded in `obsidian-nexus/.skills/` (from Phase A):
+
+- [ ] Flesh out `.skills/vault-ingest.md` — _inbox → atlas pipeline with provenance tags
+- [ ] Flesh out `.skills/vault-query.md` — RAG against Qdrant with frontmatter pre-filter
+- [ ] Flesh out `.skills/vault-lint.md` — orphan/stale/contradiction scan
+- [ ] Flesh out `.skills/vault-crosslink.md` — discover unlinked mentions → propose `[[wikilinks]]`
+- [ ] Flesh out `.skills/vault-distill.md` — conversation → atlas note extraction
+- [ ] Flesh out `.skills/vault-status.md` — vault metrics + graph analytics report
+
+Each skill file = frontmatter (name/description/triggers) + Context + Instructions + Rules.
+Any LLM reads same file, gets same behavior.
+
+### Step 2 — Bootstrap files per agent (thin pointers, fat skills)
+
+- [X] `CLAUDE.md` — Claude Code / Desktop bootstrap (scaffolded)
+- [X] `AGENTS.md` — generic agent bootstrap: Codex, LLaMA, future (scaffolded)
+- [X] `GEMINI.md` — Gemini bootstrap (scaffolded)
+- [ ] `OLLAMA.md` — modelfile template + system prompt pointing to `.skills/`
+- [ ] Add `.cursor/rules/vault-agent.mdc` → reference `.skills/`
+- [ ] Add `.windsurf/rules/vault-agent.md` → reference `.skills/`
+- [ ] Add `.github/copilot-instructions.md` → reference `.skills/`
+
+Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`.
+
+### Step 3 — Hooks: agents trigger skills automatically
+
+- [ ] Claude Code hooks (`.claude/settings.json`):
+  - `UserPromptSubmit` → if prompt matches vault skill trigger, auto-invoke
+  - `PostToolUse` (on vault Write) → append to `_system/log.md` with provenance
+  - `SessionStart` → load `_system/taxonomy.md` + recent `_system/insights.md`
+- [ ] Ollama side — use Modelfile `SYSTEM` blocks that reference skill triggers
+- [ ] n8n → receives `/webhook/vault-push` → dispatches to appropriate skill flow
+
+### Step 4 — Two-layer knowledge: Obsidian (source) + Qdrant (index)
+
+- [ ] **Obsidian** = source of truth. All writes go here first. Git = audit trail.
+- [ ] **Qdrant** = derived index. Every vault change triggers re-embed → upsert to Qdrant.
+  - Collections: `atlas`, `sources`, `projects`, `areas`
+  - Filter before search: `domain`, `type`, `status != archived`, `confidence >= medium`
+  - Embeddings: `mxbai-embed-large` (ultrabook + desktop, same model, same dim = 1024)
+- [ ] **ChromaDB** = ultrabook-local L0/L1 cache: last 30 days + current workspace + conversations
+- [ ] Never let Qdrant become primary — if it desyncs, nuke + rebuild from Obsidian
+
+### Step 5 — Cross-agent rules (enforced by bootstrap files)
+
+- [ ] Every LLM write must set: `provenance: extracted | synthesized | inferred`
+- [ ] Every LLM write must set: `confidence: high | medium | low`
+- [ ] Never overwrite `provenance: human` notes — merge or create variant
+- [ ] Every skill invocation logged to `_system/log.md` with model + tier + tokens
+- [ ] Commit message format: `[llm:{model}] {action}: {summary}` (ULTRAPLAN §8)
+
+### Why this matter (caveman explain)
+
+- Many agent tribe visit cave. Each read same wall paintings. Same rule. Same story.
+- Knowledge in one place — Obsidian. Model see through smell — Qdrant.
+- No model keep own secret scroll. Bad tribe. Cause fight. Cause drift.
+- Hook = agent wake up, sniff air, know which skill to use. Not guess. Not ask shaman every time.
+
+---
+
 ## Desktop Server (CachyOS — Arch-based)
 
 > **Decision**: using existing CachyOS install instead of dual-booting Ubuntu Server.
