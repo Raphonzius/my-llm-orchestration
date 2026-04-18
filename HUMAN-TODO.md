@@ -5,6 +5,62 @@
 
 ---
 
+## 🔥 BIG HUNT — SAVE CLAUDE TOKEN, USE LOCAL FIRE
+
+> Caveman say: Claude token expensive. Small brain run on ultrabook, big brain run on
+> desktop. Claude only for hard thing. This the tier strat. Build NOW to stop burn.
+
+**Goal:** route ~80% of work to local gemma4 models. Only hard reasoning hits Claude API.
+
+### Step 1 — Ultrabook Ollama talks to desktop Ollama
+
+- [ ] Verify desktop Ollama reachable via tunnel: `curl http://localhost:21434/api/tags`
+- [ ] Pull big brain on desktop: `ollama pull gemma4:26b` (via `ssh nexus`)
+- [ ] Ultrabook already has: `gemma4:e2b`, `gemma4:e4b`, `mxbai-embed-large` ✓
+- [ ] Write small client helper — pick endpoint by model name:
+  - `gemma4:e2b` / `gemma4:e4b` → `http://localhost:11434` (ultrabook)
+  - `gemma4:26b` / embeddings for big corpus → `http://localhost:21434` (desktop tunnel)
+  - `claude-*` → Anthropic API
+- [ ] Put helper in `agents/router/` (to be created)
+
+### Step 2 — Router model = gemma4:e2b as classifier
+
+- [ ] Write router prompt (ultrabook, `gemma4:e2b`): input = user query, output = `{tier: 1|2|3, domain: [...], reason: "..."}`
+- [ ] Classification signals (from ULTRAPLAN §1):
+  - Token estimate of expected output
+  - Number of knowledge domains involved
+  - Whether RAG retrieval needed
+  - Whether reasoning chain > 2 steps
+  - Whether output is user-facing (quality matters)
+- [ ] Test router on 20 sample queries — measure accuracy before wiring to n8n
+
+### Step 3 — Three-tier execution path
+
+| Tier | Model | Host | When |
+|------|-------|------|------|
+| 1 | `gemma4:e4b` | ultrabook (local) | drafts, lookup, classification, ~80% of work |
+| 2 | `gemma4:26b` | desktop (GPU) | code gen, analysis, summarization, RAG synthesis |
+| 3 | `claude-opus-4-7` | Anthropic API | planning, judgment, final output, complex RAG |
+
+- [ ] Wire router → tier dispatch in n8n Flow 1 (Phase C work)
+- [ ] Add budget guard: if daily Claude token usage > threshold, force tier 2 fallback
+- [ ] Log every routed call to `_system/log.md` in vault with tier + token count
+
+### Step 4 — Measure burn rate
+
+- [ ] Baseline: count Claude tokens used today (before routing live)
+- [ ] After routing live: compare — target 80%+ reduction for routine work
+- [ ] Weekly review: which queries leaked to tier 3 that could've been tier 2? Tune router.
+
+### Why this matter (caveman explain)
+
+- Claude = good hunt tool, but each hunt cost mammoth
+- Gemma4 = small spear, many mammoth free in own cave
+- Without router, every query = mammoth hunt. Tribe go broke fast
+- Router = smart shaman decide which spear for which beast
+
+---
+
 ## Desktop Server (CachyOS — Arch-based)
 
 > **Decision**: using existing CachyOS install instead of dual-booting Ubuntu Server.
