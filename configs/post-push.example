@@ -1,0 +1,19 @@
+#!/bin/bash
+# Git post-push hook — fires a webhook to n8n on the desktop
+# when the ultrabook pushes to origin. Used to trigger delta re-indexing.
+#
+# Deploy to: <vault-repo>/.githooks/post-push
+# Activate:  git config core.hooksPath .githooks
+
+DESKTOP_HOST="${DESKTOP_HOST:-127.0.0.1}"
+N8N_WEBHOOK="http://$DESKTOP_HOST:5678/webhook/vault-push"
+
+# Fire and forget — don't block the push if desktop is offline / tunnel is down
+curl -s -X POST "$N8N_WEBHOOK" \
+  -H "Content-Type: application/json" \
+  -d "{\"event\": \"push\", \"timestamp\": \"$(date -Iseconds)\", \"source\": \"ultrabook\"}" \
+  --connect-timeout 3 \
+  --max-time 5 \
+  > /dev/null 2>&1 &
+
+exit 0

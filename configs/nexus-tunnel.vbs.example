@@ -1,0 +1,11 @@
+' Windows Startup wrapper — launches start_tunnel.sh hidden at user logon.
+' Deploy to: %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\nexus-tunnel.vbs
+'
+' The VBS layer exists only to hide the Git Bash console window.
+' All logic lives in start_tunnel.sh.
+
+Set WshShell = CreateObject("WScript.Shell")
+
+' WindowStyle: 0 = hidden, 1 = normal
+' Last arg: True = wait for completion (we want this so VBS doesn't exit and Windows doesn't report "crashed")
+WshShell.Run """C:\Program Files\Git\bin\bash.exe"" --login -i -c ""~/.ssh/start_tunnel.sh""", 0, True

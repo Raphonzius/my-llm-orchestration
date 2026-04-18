@@ -611,6 +611,18 @@ This dashboard gives you at-a-glance visibility into:
 
 ---
 
+## Architecture Decision Records
+
+Major decisions are documented in [`docs/adr/`](docs/adr/README.md):
+
+- **ADR-001** — CachyOS instead of Ubuntu Server (saved hours, better GPU support)
+- **ADR-002** — Docker services bound to localhost + SSH tunnel access (encrypted, no LAN exposure)
+- **ADR-003** — Machine-specific `.env` files (`.env.ultrabook` / `.env.desktop` both committed)
+- **ADR-004** — Auto-reconnecting SSH tunnel via Windows Startup VBS (no Task Scheduler)
+- **ADR-005** — Templater syntax standardization (`<% tp.date.now("YYYY-MM-DD HH:mm") %>`)
+
+Non-sensitive code excerpts referenced by ADRs live in [`configs/`](configs/).
+
 ## Status Update (2026-04-18)
 
 **Phase A: Complete** ✓
