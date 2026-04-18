@@ -203,12 +203,21 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
   - [X] `ollama pull gemma4:e2b`
   - [X] `ollama pull gemma4:e4b`
   - [X] `ollama pull mxbai-embed-large`
-- [ ] Install ChromaDB on ultrabook (for local fast-recall):
+- [ ] Install ChromaDB on ultrabook (for local fast-recall, Docker — keeps cave clean):
   ```bash
-  pip install chromadb
-  chroma run --host localhost --port 8000
+  docker volume create chromadb-data
+  docker run -d --name chromadb \
+    -p 8000:8000 \
+    -v chromadb-data:/chroma/chroma \
+    chromadb/chroma
   ```
-  (or run via Docker: `docker run -p 8000:8000 chromadb/chroma`)
+  L0/L1 cache only — ephemeral, rebuilt from Qdrant. No git-sync needed.
+- [ ] Qdrant: use gRPC (port `6334` desktop / `26334` tunnel) — faster, binary protocol:
+  ```python
+  from qdrant_client import QdrantClient
+  client = QdrantClient(host="localhost", port=26334, prefer_grpc=True)
+  ```
+  REST (`26333`) kept as fallback only. See `configs/qdrant-config.yaml`.
 - [X] Install Obsidian community plugins:
   - [X] **Templater** — template folder: `templates/` (all templates fixed for `<% tp.date.now("YYYY-MM-DD HH:mm") %>`)
   - [X] **Dataview** — vault database queries active
