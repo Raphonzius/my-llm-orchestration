@@ -234,8 +234,11 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
   - vault-health queries active: Knowledge Inventory, Needs Attention, Provenance Audit, Recent Growth, Hub Nodes, Domain Coverage, Writing Velocity, Confidence Audit, High-Value Sources
   - Obsidian Git: auto-commit 15 min, auto-push enabled
 - [X] Test Obsidian Git: small edits committed and pushed successfully
-- [ ] Test webhook: push from ultrabook, verify n8n receives vault-push webhook
-- [ ] Open n8n dashboard: `http://localhost:25678` via SSH tunnel (requires desktop clone)
+- [X] Open n8n dashboard: `http://localhost:25678` via SSH tunnel — owner account created
+- [X] Webhook receiver flow created: `POST /webhook/vault-push` (active)
+- [X] Webhook tested via curl — `{"message":"Workflow was started"}` confirmed
+- [ ] Test post-push hook end-to-end: push from Obsidian Git → n8n receives automatically
+- [ ] Clone obsidian-nexus on desktop + activate webhook processing logic
 
 ## Desktop — Next Session
 
