@@ -51,7 +51,7 @@ running on desktop with Limine bootloader. Scripts updated for firewalld/pacman.
 | n8n polling flow docs | Ready | [`deploy/n8n-polling-flow.md`](deploy/n8n-polling-flow.md) |
 
 **Blocked on**: Human installing Docker + NVIDIA Container Toolkit on CachyOS desktop.
-Desktop IP: `192.168.0.109`.
+Desktop IP: `192.168.0.112`.
 
 ---
 

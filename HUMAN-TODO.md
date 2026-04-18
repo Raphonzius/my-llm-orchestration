@@ -32,7 +32,7 @@
   ```
   Should show the RTX 3060 from inside the container.
 - [ ] Set a static DHCP lease on your router for the desktop IP
-  - Current IP: `192.168.0.109` (confirm it stays the same after reboot)
+  - Current IP: `192.168.0.112` (confirm it stays the same after reboot)
   - Note it — you'll use it everywhere as `DESKTOP_HOST`
 - [ ] Clone both repos on desktop:
   ```bash
@@ -60,8 +60,8 @@
 
 ## Ultrabook Configuration
 
-- [ ] Update `DESKTOP_HOST` IP (current: `192.168.0.109`) in these files:
-  - `obsidian-nexus/.env` — replace `192.168.1.XXX` with `192.168.0.109`
+- [ ] Update `DESKTOP_HOST` IP (current: `192.168.0.112`) in these files:
+  - `obsidian-nexus/.env` — replace `192.168.1.XXX` with `192.168.0.112`
   - `obsidian-nexus/.env.local` — same
   - `obsidian-nexus/.githooks/post-push` — same
 - [ ] Activate git hook:
@@ -90,11 +90,11 @@
 
 ## Verification
 
-- [ ] From ultrabook Git Bash: `bash deploy/verify.sh <desktop-ip>`
+- [ ] From ultrabook Git Bash: `bash deploy/verify.sh 192.168.0.112`
   - Should show: Ollama OK, Qdrant OK, n8n OK
 - [ ] Open Obsidian vault — confirm all folders, templates, vault-health.base render
 - [ ] Test git hook: make a small edit, commit+push, check n8n received webhook
-- [ ] Open n8n dashboard from ultrabook: `http://<desktop-ip>:5678`
+- [ ] Open n8n dashboard from ultrabook: `http://192.168.0.112:5678`
 
 ---
 
