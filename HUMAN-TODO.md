@@ -223,8 +223,8 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
   - [X] **Dataview** — vault database queries active
   - [ ] **Graph Analysis** — not found in community registry (optional, skip)
   - [X] **Obsidian Git** — auto-commit: 15 min, auto-push enabled
-  - [ ] **Web Clipper** — browser extension, save to `_inbox/clips/`
-  - [ ] **Tag Wrangler** — rename/merge tags vault-wide
+  - [X] **Web Clipper** — browser extension, configured to `_inbox/clips/`
+  - [X] **Tag Wrangler** — installed
 
 ## Verification
 
