@@ -40,12 +40,11 @@
   - `ssh nexus` alias + LocalForward tunnels configured in `~/.ssh/config`
   - Docker services bound to `127.0.0.1` only — inaccessible from LAN
   - Tunnel ports on ultrabook: `21434` (Ollama), `26333/26334` (Qdrant), `25678` (n8n)
-- [ ] Set up autossh persistent tunnel (auto-reconnects on network drop):
-  ```bash
-  scoop install autossh      # in Git Bash (requires Scoop)
-  autossh -M 0 -fN nexus     # start tunnel in background
-  ```
-  Then add to Windows Task Scheduler to run at logon.
+- [X] Set up autossh persistent tunnel (auto-reconnects on network drop):
+  - [X] SSH key config: `C:\Users\rafae\.ssh\config`
+  - [X] Tunnel startup script: `C:\Users\rafae\.ssh\start_tunnel.sh`
+  - [X] Windows Startup VBS wrapper: `C:\Users\rafae\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\nexus-tunnel.vbs`
+  - Runs at user logon via Startup folder (no Task Scheduler needed)
 - [ ] Clone obsidian-nexus on desktop:
   ```bash
   git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
@@ -55,22 +54,22 @@
 
 - [X] Create repo for obsidian-nexus: `https://github.com/Raphonzius/obsidian-nexus`
 - [X] Push llm-orchestration to origin/main
-- [ ] Push obsidian-nexus:
-  ```bash
-  cd C:\Users\rafae\obsidian-nexus
-  git remote add origin https://github.com/Raphonzius/obsidian-nexus.git
-  git push -u origin main
-  ```
+- [X] Push obsidian-nexus with machine-specific configs:
+  - [X] `.env.ultrabook` — tunnel ports (21434, 26333, 25678)
+  - [X] `.env.desktop` — direct localhost access (11434, 6333, 5678)
+  - [X] Removed generic `.env` (redundant)
+  - [X] All templates fixed for Templater syntax
+  - [X] vault-health enhanced with 5 Dataview queries
+  - Latest: `e9c7adf` — vault-health improvements
 
 ## Ultrabook Configuration
 
-- [ ] Update `DESKTOP_HOST` IP in these files (new IP: `192.168.0.112`):
-  - `obsidian-nexus/.env` — replace placeholder with `192.168.0.112`
-  - `obsidian-nexus/.env.local` — same
-  - `obsidian-nexus/.githooks/post-push` — same
-- [ ] Activate git hook:
+- [X] Update `DESKTOP_HOST` IP and configure environment:
+  - [X] `.env.ultrabook` — uses tunnel ports (via `ssh nexus` alias)
+  - [X] `.githooks/post-push` — updated to `192.168.0.112`
+  - [X] Removed `.env.local` (now using machine-specific `.env.*` files)
+- [X] Activate git hook:
   ```bash
-  cd C:\Users\rafae\obsidian-nexus
   git config core.hooksPath .githooks
   ```
 - [X] Install Ollama on ultrabook (for local tier-1 models):
@@ -84,20 +83,37 @@
   chroma run --host localhost --port 8000
   ```
   (or run via Docker: `docker run -p 8000:8000 chromadb/chroma`)
-- [ ] Install Obsidian community plugins:
-  - **Templater** — Settings > Template folder: `templates/`
-  - **Dataview** — query vault as database
-  - **Graph Analysis** — betweenness centrality, clustering
-  - **Obsidian Git** — auto-commit interval (every 10-30 min)
-  - **Web Clipper** — browser extension, save to `_inbox/clips/`
-  - **Tag Wrangler** — rename/merge tags vault-wide
+- [X] Install Obsidian community plugins:
+  - [X] **Templater** — template folder: `templates/` (all templates fixed for `<% tp.date.now("YYYY-MM-DD HH:mm") %>`)
+  - [X] **Dataview** — vault database queries active
+  - [ ] **Graph Analysis** — not found in community registry (optional, skip)
+  - [X] **Obsidian Git** — auto-commit: 15 min, auto-push enabled
+  - [ ] **Web Clipper** — browser extension, save to `_inbox/clips/`
+  - [ ] **Tag Wrangler** — rename/merge tags vault-wide
 
 ## Verification
 
 - [X] From ultrabook: `bash deploy/verify.sh 192.168.0.112` — all passed
-- [ ] Open Obsidian vault — confirm all folders, templates, vault-health.base render
-- [ ] Test git hook: make a small edit, commit+push, check n8n received webhook
-- [ ] Open n8n dashboard from ultrabook: `http://localhost:25678` (requires active SSH tunnel)
+- [X] Open Obsidian vault — all folders, templates, vault-health.base render confirmed
+  - Templater variables working (`<% tp.date.now("YYYY-MM-DD HH:mm") %>`)
+  - vault-health queries active: Knowledge Inventory, Needs Attention, Provenance Audit, Recent Growth, Hub Nodes, Domain Coverage, Writing Velocity, Confidence Audit, High-Value Sources
+  - Obsidian Git: auto-commit 15 min, auto-push enabled
+- [X] Test Obsidian Git: small edits committed and pushed successfully
+- [ ] Test webhook: push from ultrabook, verify n8n receives vault-push webhook
+- [ ] Open n8n dashboard: `http://localhost:25678` via SSH tunnel (requires desktop clone)
+
+## Desktop — Next Session
+
+- [ ] Clone obsidian-nexus on desktop:
+  ```bash
+  git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
+  cp ~/obsidian-nexus/.env.desktop ~/obsidian-nexus/.env.local
+  ```
+- [ ] Verify webhook infrastructure (post-push hook):
+  - Push from ultrabook vault
+  - Monitor n8n for incoming `vault-push` webhook at `/webhook/vault-push`
+- [ ] Install remaining Obsidian plugins (optional for ultrabook):
+  - Web Clipper + Tag Wrangler
 
 ---
 

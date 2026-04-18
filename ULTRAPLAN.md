@@ -611,20 +611,41 @@ This dashboard gives you at-a-glance visibility into:
 
 ---
 
+## Status Update (2026-04-18)
+
+**Phase A: Complete** ✓
+- Vault initialized with full folder structure on ultrabook
+- All 8 templates created with Templater syntax `<% tp.date.now("YYYY-MM-DD HH:mm") %>`
+- obsidian-nexus repo on GitHub with machine-specific configs (`.env.ultrabook` / `.env.desktop`)
+- Obsidian Git: auto-commit 15 min, auto-push enabled
+
+**Phase B: Complete** ✓
+- Desktop (CachyOS, Ryzen 5 5600x + RTX 3050) fully operational
+- Docker stack: Ollama, Qdrant, n8n running headless
+- SSH tunnel: ed25519 auth, password disabled, persistent `autossh` on Windows Startup
+- Services bound to `127.0.0.1` only, ultrabook access via SSH tunnels to ports: 21434 (Ollama), 26333/26334 (Qdrant), 25678 (n8n)
+
+**Phase E (partial): In Progress** 🔄
+- Obsidian plugins installed: Templater ✓, Dataview ✓, Obsidian Git ✓
+- vault-health enhanced with 5 Dataview queries (Hub Nodes, Domain Coverage, Writing Velocity, Confidence Audit, High-Value Sources)
+- Graph Analysis not found in registry (skipped)
+- Pending: Web Clipper, Tag Wrangler
+
 ## Verification
 
 After Phase A:
-- [ ] Vault opens in Obsidian with all folders visible
-- [ ] Templates create notes with correct frontmatter
-- [ ] Git push/pull works between ultrabook and remote
+- [X] Vault opens in Obsidian with all folders visible
+- [X] Templates create notes with correct frontmatter (Templater syntax verified)
+- [X] Git push/pull works between ultrabook and remote (auto-commit/push tested)
 
 After Phase B:
 - [X] `curl http://localhost:21434/api/tags` returns Ollama models (via SSH tunnel)
 - [X] `curl http://localhost:26333/collections` returns Qdrant collections (via SSH tunnel)
 - [X] n8n dashboard accessible at `http://localhost:25678` (via SSH tunnel)
-- [ ] Router flow correctly classifies test queries into 3 tiers
+- [ ] Router flow correctly classifies test queries into 3 tiers (pending Phase C)
 
 After Phase C:
+- [ ] Desktop clone of obsidian-nexus (on hold)
 - [ ] Dropping a file in `_inbox/` → git commit → n8n processes → note appears in `atlas/`
 - [ ] RAG query returns relevant context from vault
 - [ ] `_system/log.md` records all operations
