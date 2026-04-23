@@ -4,10 +4,10 @@ Run: uvicorn api.main:app --host 127.0.0.1 --port 8001 --reload
 """
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -133,160 +133,198 @@ def ingest_list_clips() -> IngestListResponse:
 
 class ClipMetadata(BaseModel):
     title: str
-    summary: str
-    domain: str
-    tags: list[str]
-    entities: list[str]
+    summary: str = ""
+    domain: str = "misc"
+    tags: list[str] = []
+    entities: list[str] = []
+    key_claims: list[str] = []
 
 
-class IngestProcessResponse(BaseModel):
+class ReadClipResponse(BaseModel):
     status: str
     path: str
-    metadata: ClipMetadata
-    qdrant_matches: list[dict]
-    decision: str  # "create" or "merge"
-    best_match_path: str | None = None
+    content: str
 
 
-def _ollama_generate(prompt: str, system_prompt: str, model: str = "gemma4:26b") -> str:
-    """Call Ollama /api/generate and return text response."""
-    resp = requests.post(
-        f"{OLLAMA_URL}/api/generate",
-        json={"model": model, "prompt": prompt, "system": system_prompt, "stream": False},
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json().get("response", "")
-
-
-def _ollama_embed(text: str, model: str = "mxbai-embed-large") -> list[float]:
-    """Call Ollama /api/embed and return vector."""
-    resp = requests.post(
-        f"{OLLAMA_URL}/api/embed",
-        json={"model": model, "input": text},
-        timeout=120,
-    )
-    resp.raise_for_status()
-    embeddings = resp.json().get("embeddings", [])
-    return embeddings[0] if embeddings else []
-
-
-def _qdrant_search(vector: list[float], collection: str = "atlas", limit: int = 5, threshold: float = 0.75) -> list[dict]:
-    """Search Qdrant for similar vectors."""
-    resp = requests.post(
-        f"{QDRANT_URL}/collections/{collection}/points/search",
-        json={"vector": vector, "limit": limit, "score_threshold": threshold},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    result = resp.json()
-    return result.get("result", [])
-
-
-@app.post("/ingest-process-clip")
-def ingest_process_clip(path: str) -> IngestProcessResponse:
-    """Extract metadata, embed, search Qdrant, decide merge vs create."""
+@app.post("/ingest-read-clip")
+def ingest_read_clip(path: str) -> ReadClipResponse:
+    """Return raw markdown content of a clip file."""
     clip_file = VAULT_PATH / path
     if not clip_file.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
-
-    # Read clip
-    clip_text = clip_file.read_text(encoding="utf-8")
-
-    # Extract via gemma4:26b
-    system_prompt = """You are an ingestor. Extract key information from the clip.
-    Return JSON: {title, summary, domain, tags: [], entities: [], key_claims: []}
-    Keep summary under 200 chars. Be concise."""
-
-    try:
-        response_text = _ollama_generate(clip_text, system_prompt)
-        # Parse JSON from response
-        match = re.search(r"\{.*\}", response_text, re.DOTALL)
-        if match:
-            extracted = json.loads(match.group())
-        else:
-            extracted = {}
-    except Exception as e:
-        # Fallback on error
-        extracted = {}
-
-    metadata = ClipMetadata(
-        title=extracted.get("title", clip_file.stem),
-        summary=extracted.get("summary", clip_text[:100]),
-        domain=extracted.get("domain", "misc"),
-        tags=extracted.get("tags", []),
-        entities=extracted.get("entities", []),
-    )
-
-    # Embed clip
-    try:
-        vector = _ollama_embed(clip_text)
-        if not vector:
-            raise ValueError("Empty embedding")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
-
-    # Search Qdrant for similar notes
-    try:
-        qdrant_matches = _qdrant_search(vector, collection="atlas", limit=3, threshold=0.80)
-    except Exception as e:
-        # Qdrant collection might not exist, that's ok
-        qdrant_matches = []
-
-    decision = "create" if not qdrant_matches else "merge"
-    best_match = None
-    if qdrant_matches and qdrant_matches[0].get("score", 0) > 0.85:
-        best_match = qdrant_matches[0].get("payload", {}).get("file_path")
-
-    return IngestProcessResponse(
+    return ReadClipResponse(
         status="ok",
         path=path,
-        metadata=metadata,
-        qdrant_matches=qdrant_matches,
+        content=clip_file.read_text(encoding="utf-8"),
+    )
+
+
+class QdrantSearchRequest(BaseModel):
+    vector: list[float]
+    collection: str = "atlas"
+    limit: int = 3
+    threshold: float = 0.80
+
+
+class QdrantSearchResponse(BaseModel):
+    status: str
+    matches: list[dict]
+    decision: str  # "create" or "merge"
+    best_match_path: str | None = None
+    best_score: float | None = None
+
+
+@app.post("/ingest-search-qdrant")
+def ingest_search_qdrant(req: QdrantSearchRequest) -> QdrantSearchResponse:
+    """Search Qdrant for similar notes. Returns decision."""
+    try:
+        resp = requests.post(
+            f"{QDRANT_URL}/collections/{req.collection}/points/search",
+            json={"vector": req.vector, "limit": req.limit, "score_threshold": req.threshold},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        matches = resp.json().get("result", [])
+    except requests.exceptions.RequestException:
+        # Collection missing or Qdrant down — treat as no matches
+        matches = []
+
+    decision = "create"
+    best_path = None
+    best_score = None
+    if matches:
+        top = matches[0]
+        best_score = top.get("score")
+        if best_score and best_score > 0.85:
+            decision = "merge"
+            best_path = top.get("payload", {}).get("file_path") or top.get("payload", {}).get("path")
+
+    return QdrantSearchResponse(
+        status="ok",
+        matches=matches,
         decision=decision,
-        best_match_path=best_match,
+        best_match_path=best_path,
+        best_score=best_score,
     )
 
 
 class IngestWriteRequest(BaseModel):
     clip_path: str
     metadata: ClipMetadata
+    body: str
     decision: str  # "create" or "merge"
     merge_target: str | None = None
+    model: str = "gemma4:26b"
 
 
 class IngestWriteResponse(BaseModel):
     status: str
     atlas_path: str
-    message: str
+    action: str  # "created" or "merged"
+
+
+def _slugify(text: str) -> str:
+    """Make filename-safe slug from title."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_-]+", "-", text)
+    return text[:80] or "untitled"
+
+
+def _format_frontmatter(metadata: ClipMetadata, clip_path: str, model: str) -> str:
+    """Build YAML frontmatter block."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    tags = ", ".join(f'"{t}"' for t in metadata.tags)
+    entities = ", ".join(f'"{e}"' for e in metadata.entities)
+    return (
+        "---\n"
+        f'title: "{metadata.title}"\n'
+        "type: atlas\n"
+        "status: active\n"
+        f'domain: "{metadata.domain}"\n'
+        f"tags: [{tags}]\n"
+        f"entities: [{entities}]\n"
+        "provenance: synthesized\n"
+        "confidence: medium\n"
+        f'source: "{clip_path}"\n'
+        f'created: "{now}"\n'
+        f'modified: "{now}"\n'
+        f'summary: "{metadata.summary}"\n'
+        f'llm_model: "{model}"\n'
+        "---\n\n"
+    )
 
 
 @app.post("/ingest-write-atlas")
 def ingest_write_atlas(req: IngestWriteRequest) -> IngestWriteResponse:
-    """Write new atlas note or merge into existing."""
-    # TODO: implement merge vs create logic
-    # For now, just return success
-    atlas_path = f"atlas/{req.metadata.title}.md"
+    """Write new atlas note or append to merge target."""
+    atlas_dir = VAULT_PATH / "atlas"
+    atlas_dir.mkdir(exist_ok=True)
+
+    if req.decision == "merge" and req.merge_target:
+        target = VAULT_PATH / req.merge_target
+        if not target.exists():
+            raise HTTPException(status_code=404, detail=f"Merge target missing: {req.merge_target}")
+
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        append_block = (
+            f"\n\n## Added {now} (from {req.clip_path})\n\n"
+            f"{req.body}\n"
+        )
+        with target.open("a", encoding="utf-8") as fh:
+            fh.write(append_block)
+        return IngestWriteResponse(
+            status="ok",
+            atlas_path=req.merge_target,
+            action="merged",
+        )
+
+    # Create new atlas note
+    slug = _slugify(req.metadata.title)
+    atlas_path = atlas_dir / f"{slug}.md"
+
+    # If collision, add suffix
+    i = 2
+    while atlas_path.exists():
+        atlas_path = atlas_dir / f"{slug}-{i}.md"
+        i += 1
+
+    content = _format_frontmatter(req.metadata, req.clip_path, req.model) + req.body.strip() + "\n"
+    atlas_path.write_text(content, encoding="utf-8")
+
+    rel_path = atlas_path.relative_to(VAULT_PATH).as_posix()
     return IngestWriteResponse(
         status="ok",
-        atlas_path=atlas_path,
-        message=f"Would write to {atlas_path}",
+        atlas_path=rel_path,
+        action="created",
     )
 
 
+class CommitRequest(BaseModel):
+    message: str = "ingest: new notes"
+    model: str = "gemma4-26b"
+
+
 @app.post("/ingest-commit")
-def ingest_commit(message: str = "ingest: new notes") -> CommandResult:
+def ingest_commit(req: CommitRequest) -> CommandResult:
     """Commit and push ingest changes."""
-    result = run(["git", "add", "atlas/"], cwd=VAULT_PATH)
-    if result.exit_code != 0:
-        raise HTTPException(status_code=500, detail=f"git add failed: {result.stderr}")
+    full_message = f"[llm:{req.model}] {req.message}"
 
-    result = run(["git", "commit", "-m", message], cwd=VAULT_PATH)
-    if result.exit_code != 0:
-        raise HTTPException(status_code=500, detail=f"git commit failed: {result.stderr}")
+    add = run(["git", "add", "atlas/", "_inbox/clips/"], cwd=VAULT_PATH)
+    if add.exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"git add failed: {add.stderr}")
 
-    result = run(["git", "push"], cwd=VAULT_PATH)
-    if result.exit_code != 0:
-        raise HTTPException(status_code=500, detail=f"git push failed: {result.stderr}")
+    # Check if anything to commit
+    status = run(["git", "status", "--porcelain"], cwd=VAULT_PATH)
+    if not status.stdout.strip():
+        return CommandResult(status="ok", stdout="nothing to commit", stderr="", exit_code=0)
 
-    return result
+    commit = run(["git", "commit", "-m", full_message], cwd=VAULT_PATH)
+    if commit.exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"git commit failed: {commit.stderr}")
+
+    push = run(["git", "push"], cwd=VAULT_PATH)
+    if push.exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"git push failed: {push.stderr}")
+
+    return push
