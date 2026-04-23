@@ -4,10 +4,13 @@ Run: uvicorn api.main:app --host 127.0.0.1 --port 8001 --reload
 """
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 
+import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -145,6 +148,41 @@ class IngestProcessResponse(BaseModel):
     best_match_path: str | None = None
 
 
+def _ollama_generate(prompt: str, system_prompt: str, model: str = "gemma4:26b") -> str:
+    """Call Ollama /api/generate and return text response."""
+    resp = requests.post(
+        f"{OLLAMA_URL}/api/generate",
+        json={"model": model, "prompt": prompt, "system": system_prompt, "stream": False},
+        timeout=120,
+    )
+    resp.raise_for_status()
+    return resp.json().get("response", "")
+
+
+def _ollama_embed(text: str, model: str = "mxbai-embed-large") -> list[float]:
+    """Call Ollama /api/embed and return vector."""
+    resp = requests.post(
+        f"{OLLAMA_URL}/api/embed",
+        json={"model": model, "input": text},
+        timeout=120,
+    )
+    resp.raise_for_status()
+    embeddings = resp.json().get("embeddings", [])
+    return embeddings[0] if embeddings else []
+
+
+def _qdrant_search(vector: list[float], collection: str = "atlas", limit: int = 5, threshold: float = 0.75) -> list[dict]:
+    """Search Qdrant for similar vectors."""
+    resp = requests.post(
+        f"{QDRANT_URL}/collections/{collection}/points/search",
+        json={"vector": vector, "limit": limit, "score_threshold": threshold},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    result = resp.json()
+    return result.get("result", [])
+
+
 @app.post("/ingest-process-clip")
 def ingest_process_clip(path: str) -> IngestProcessResponse:
     """Extract metadata, embed, search Qdrant, decide merge vs create."""
@@ -155,19 +193,45 @@ def ingest_process_clip(path: str) -> IngestProcessResponse:
     # Read clip
     clip_text = clip_file.read_text(encoding="utf-8")
 
-    # Extract via gemma4:26b (simplified — just return structure for now)
-    # TODO: call Ollama /api/generate with ingestor system prompt
+    # Extract via gemma4:26b
+    system_prompt = """You are an ingestor. Extract key information from the clip.
+    Return JSON: {title, summary, domain, tags: [], entities: [], key_claims: []}
+    Keep summary under 200 chars. Be concise."""
+
+    try:
+        response_text = _ollama_generate(clip_text, system_prompt)
+        # Parse JSON from response
+        match = re.search(r"\{.*\}", response_text, re.DOTALL)
+        if match:
+            extracted = json.loads(match.group())
+        else:
+            extracted = {}
+    except Exception as e:
+        # Fallback on error
+        extracted = {}
+
     metadata = ClipMetadata(
-        title=clip_file.stem,
-        summary=clip_text[:100],
-        domain="misc",
-        tags=[],
-        entities=[],
+        title=extracted.get("title", clip_file.stem),
+        summary=extracted.get("summary", clip_text[:100]),
+        domain=extracted.get("domain", "misc"),
+        tags=extracted.get("tags", []),
+        entities=extracted.get("entities", []),
     )
 
-    # TODO: embed + Qdrant search
-    # For now, return empty matches
-    qdrant_matches = []
+    # Embed clip
+    try:
+        vector = _ollama_embed(clip_text)
+        if not vector:
+            raise ValueError("Empty embedding")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
+
+    # Search Qdrant for similar notes
+    try:
+        qdrant_matches = _qdrant_search(vector, collection="atlas", limit=3, threshold=0.80)
+    except Exception as e:
+        # Qdrant collection might not exist, that's ok
+        qdrant_matches = []
 
     decision = "create" if not qdrant_matches else "merge"
     best_match = None
