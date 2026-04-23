@@ -239,6 +239,7 @@ def _format_frontmatter(metadata: ClipMetadata, clip_path: str, model: str) -> s
     return (
         "---\n"
         f'title: "{metadata.title}"\n'
+        "aliases: []\n"
         "type: atlas\n"
         "status: active\n"
         f'domain: "{metadata.domain}"\n'
