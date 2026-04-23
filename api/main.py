@@ -109,6 +109,11 @@ class IngestListResponse(BaseModel):
 @app.post("/ingest-list-clips")
 def ingest_list_clips() -> IngestListResponse:
     """List new _inbox/clips/*.md files since last commit."""
+    # Pull first to sync latest changes
+    pull = run(["git", "pull", "--ff-only"], cwd=VAULT_PATH)
+    if pull.exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"git pull failed: {pull.stderr}")
+
     result = run(
         ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
         cwd=VAULT_PATH,
