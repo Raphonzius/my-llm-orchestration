@@ -1,0 +1,15 @@
+[Unit]
+Description=Nexus Pipeline API
+After=network.target nexus-compose.service
+Requires=nexus-compose.service
+
+[Service]
+Type=simple
+User=raphonzius
+WorkingDirectory=/home/raphonzius/llm-orchestration
+ExecStart=/home/raphonzius/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=nexus.target

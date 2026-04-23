@@ -131,6 +131,79 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
 
 ---
 
+## 🛡️ BIG HUNT 3 — TAILSCALE MESH, REACH CAVE FROM ANY FOREST
+
+> Caveman say: SSH tunnel only work when ultrabook in own cave (same wifi). Hunt far
+> from home? Cave unreachable. Tailscale = magic rope between cave and ultrabook,
+> work any forest, any coffee shop, any hotel. No open port on desktop = no bad
+> tribe sniff around.
+
+**Goal:** replace LAN-only SSH tunnel with Tailscale WireGuard mesh. Desktop reachable from anywhere without port forwarding or public exposure.
+
+### Why Tailscale (vs current setup)
+
+- Current: `ssh nexus` works only on `192.168.0.x` LAN — breaks when ultrabook leaves home
+- Current: firewall locks Nexus ports to `192.168.0.106` (ultrabook IP) — useless off-LAN
+- Tailscale: free solo tier (100 devices), WireGuard kernel module = <1% desktop CPU
+- Tailscale: zero open ports on desktop, NAT traversal automatic, MagicDNS hostnames
+- Tradeoff accepted: Tailscale Inc holds auth metadata (not traffic — P2P encrypted)
+
+### Step 1 — Install + enroll both machines
+
+- [ ] Create Tailscale account with Google SSO (rafael.informa@gmail.com)
+- [ ] Desktop (CachyOS): `sudo pacman -S tailscale && sudo systemctl enable --now tailscaled`
+- [ ] Desktop: `sudo tailscale up --ssh --hostname=nexus`
+- [ ] Ultrabook (Windows): install Tailscale from tailscale.com/download
+- [ ] Enable MagicDNS in admin console → desktop reachable as `nexus` (or `nexus.tailnet-name.ts.net`)
+- [ ] Verify: `ping nexus` works from ultrabook while on mobile hotspot
+
+### Step 2 — Harden with ACLs + key expiry
+
+- [ ] Admin console → ACLs: restrict tailnet to only own two devices
+- [ ] Enable tagged nodes: `tag:server` (desktop), `tag:client` (ultrabook)
+- [ ] ACL rule: only `tag:client` can reach `tag:server` on ports `22, 11434, 6333, 6334, 5678`
+- [ ] Enable key expiry (90 days default) — forces periodic re-auth
+- [ ] Disable key expiry ONLY on desktop (headless, can't interactively re-auth)
+- [ ] Enable Tailscale SSH on desktop — replaces OpenSSH key mgmt with Tailscale identity
+
+### Step 3 — Migrate tunnel ports to direct Tailscale access
+
+- [ ] Update `~/.ssh/config`: replace `HostName 192.168.0.112` with `HostName nexus`
+- [ ] Remove `LocalForward` lines — no tunnel needed, hit desktop ports directly
+- [ ] Update `.env.ultrabook`:
+  - `OLLAMA_HOST=http://nexus:11434` (was `localhost:21434`)
+  - `QDRANT_HOST=nexus`, `QDRANT_PORT=6333`, `QDRANT_GRPC_PORT=6334`
+  - `N8N_HOST=http://nexus:5678`
+- [ ] Update `.githooks/post-push` — replace `192.168.0.112` with `nexus`
+- [ ] Update Docker bind: keep services on `127.0.0.1` + add Tailscale IP `100.x.x.x` (NOT `0.0.0.0`)
+  - Better: use Tailscale Serve to expose only over tailnet: `tailscale serve --bg http://localhost:11434`
+- [ ] Firewall: drop LAN-IP allowlist rules, only allow Tailscale interface `tailscale0`
+- [ ] Decommission autossh + Windows Startup VBS wrapper — no longer needed
+
+### Step 4 — Exit node + DNS for public wifi safety
+
+- [ ] Configure desktop as exit node: `sudo tailscale up --advertise-exit-node`
+- [ ] Approve exit node in admin console
+- [ ] Ultrabook: toggle "use exit node" when on untrusted wifi (airport, cafe)
+- [ ] All ultrabook traffic routes through home desktop when enabled — no public wifi sniffing
+
+### Step 5 — Optional: Headscale self-host (if ever distrust Tailscale Inc)
+
+- [ ] **SKIP unless needed.** Free tier + trust model fine for solo dev.
+- [ ] If triggered: deploy Headscale on cheapest VPS (~$4/mo Hetzner)
+- [ ] Point all clients at self-hosted control plane
+- [ ] Keep WireGuard data plane (still <1% CPU on desktop)
+
+### Why this matter (caveman explain)
+
+- Cave in forest only reach when stand in own forest = bad. Tribe need travel.
+- Magic rope (WireGuard) stretch any distance, bad tribe no see rope because encrypted
+- No hole in cave wall (no port forward) = no wolf sneak in
+- Small brain (ultrabook) always talk big brain (desktop) even at coffee shop
+- Exit node = ultrabook hide true location behind cave when in hostile forest
+
+---
+
 ## Desktop Server (CachyOS — Arch-based)
 
 > **Decision**: using existing CachyOS install instead of dual-booting Ubuntu Server.
