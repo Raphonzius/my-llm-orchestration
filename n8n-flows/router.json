@@ -1,0 +1,313 @@
+{
+  "name": "Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "route",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-1400, 0],
+      "id": "d1e2f3a4-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "webhookId": "router-webhook-001"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "rtr-001",
+              "name": "=query",
+              "value": "={{ $json.body.query || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "rtr-002",
+              "name": "=context",
+              "value": "={{ $json.body.context || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "rtr-003",
+              "name": "=force_tier",
+              "value": "={{ $json.body.force_tier || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-1176, 0],
+      "id": "d1e2f3a4-0002-4000-8000-000000000002",
+      "name": "normalize-route-payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3},
+          "conditions": [
+            {
+              "id": "rtr-force-001",
+              "leftValue": "={{ $json.force_tier }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-952, 0],
+      "id": "d1e2f3a4-0003-4000-8000-000000000003",
+      "name": "check-force-tier"
+    },
+    {
+      "parameters": {
+        "model": "gemma4:e2b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [-728, 96],
+      "id": "d1e2f3a4-0004-4000-8000-000000000004",
+      "name": "llm-gemma4-e2b",
+      "credentials": {
+        "ollamaApi": {
+          "id": "QEuzv5uQ8e5xcGFh",
+          "name": "ollama-desktop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "/no_think\n\nYou are a query router. Classify the query into exactly one tier.\nReturn ONLY JSON in a ```json code fence: {\"tier\": 1|2|3, \"domain\": [\"tag\"], \"reason\": \"one sentence\"}\n\nTier 1 (gemma4:e4b — fast, local): lookup, classification, yes/no, draft, template fill, short answers\nTier 2 (gemma4:26b — GPU): code generation, summarization, analysis, RAG synthesis, multi-paragraph output\nTier 3 (claude — API, expensive): multi-step reasoning, planning, judgment calls, final user-facing output\n\nNever route to tier 3 for anything a local model can handle."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [-728, -96],
+      "id": "d1e2f3a4-0005-4000-8000-000000000005",
+      "name": "classify-chain"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.text || '';\nconst fenceMatches = [...raw.matchAll(/```(?:json)?\\s*([\\s\\S]*?)```/g)];\nlet jsonStr = fenceMatches.length > 0\n  ? fenceMatches[fenceMatches.length - 1][1]\n  : (raw.match(/(\\{[\\s\\S]*?\\})/) || ['', '{}'])[1];\nlet cls = {};\ntry { cls = JSON.parse(jsonStr.trim()); } catch(e) { cls = {}; }\nconst forceTier = $('normalize-route-payload').first().json.force_tier || 0;\nreturn {\n  query: $('normalize-route-payload').first().json.query,\n  context: $('normalize-route-payload').first().json.context,\n  tier: forceTier > 0 ? forceTier : (cls.tier || 2),\n  domain: cls.domain || [],\n  reason: cls.reason || ''\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-504, -96],
+      "id": "d1e2f3a4-0006-4000-8000-000000000006",
+      "name": "parse-classification"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  query: $('normalize-route-payload').first().json.query,\n  context: $('normalize-route-payload').first().json.context,\n  tier: $('normalize-route-payload').first().json.force_tier,\n  domain: [],\n  reason: 'forced'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-728, -288],
+      "id": "d1e2f3a4-0007-4000-8000-000000000007",
+      "name": "apply-force-tier"
+    },
+    {
+      "parameters": {
+        "dataType": "number",
+        "value1": "={{ $json.tier }}",
+        "rules": {
+          "rules": [
+            {"value2": 1, "outputKey": "1"},
+            {"value2": 2, "outputKey": "2"},
+            {"value2": 3, "outputKey": "3"}
+          ]
+        },
+        "fallbackOutput": "extra"
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [-280, -96],
+      "id": "d1e2f3a4-0008-4000-8000-000000000008",
+      "name": "dispatch-tier"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "model", "value": "gemma4:e4b"},
+            {"name": "prompt", "value": "={{ $json.query }}"},
+            {"name": "stream", "value": false}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-56, -288],
+      "id": "d1e2f3a4-0009-4000-8000-000000000009",
+      "name": "call-tier1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "model", "value": "gemma4:26b"},
+            {"name": "prompt", "value": "={{ $json.query }}"},
+            {"name": "stream", "value": false}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-56, -96],
+      "id": "d1e2f3a4-0010-4000-8000-000000000010",
+      "name": "call-tier2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}"},
+            {"name": "anthropic-version", "value": "2023-06-01"},
+            {"name": "content-type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "model", "value": "claude-opus-4-7"},
+            {"name": "max_tokens", "value": 2048},
+            {"name": "messages", "value": "=[{\"role\": \"user\", \"content\": \"{{ $json.query }}\"}]"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-56, 96],
+      "id": "d1e2f3a4-0011-4000-8000-000000000011",
+      "name": "call-tier3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst tier = $('dispatch-tier').first().json?.tier || $('parse-classification').first().json?.tier || 0;\nconst answer = input.response || input.content?.[0]?.text || input.text || '';\nreturn [{\n  json: {\n    answer: answer.trim(),\n    tier,\n    query: $('normalize-route-payload').first().json.query,\n    model: tier === 1 ? 'gemma4:e4b' : tier === 2 ? 'gemma4:26b' : 'claude-opus-4-7'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [168, -96],
+      "id": "d1e2f3a4-0012-4000-8000-000000000012",
+      "name": "format-response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/router-log",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "query", "value": "={{ $json.query }}"},
+            {"name": "tier", "value": "={{ $json.tier }}"},
+            {"name": "model", "value": "={{ $json.model }}"},
+            {"name": "reason", "value": "={{ $('parse-classification').first().json?.reason || 'forced' }}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [392, -96],
+      "id": "d1e2f3a4-0013-4000-8000-000000000013",
+      "name": "log-route"
+    },
+    {
+      "parameters": {
+        "options": {"responseCode": 200}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [616, -96],
+      "id": "d1e2f3a4-0014-4000-8000-000000000014",
+      "name": "respond-success"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "normalize-route-payload", "type": "main", "index": 0}]]
+    },
+    "normalize-route-payload": {
+      "main": [[{"node": "check-force-tier", "type": "main", "index": 0}]]
+    },
+    "check-force-tier": {
+      "main": [
+        [{"node": "apply-force-tier", "type": "main", "index": 0}],
+        [{"node": "classify-chain", "type": "main", "index": 0}]
+      ]
+    },
+    "llm-gemma4-e2b": {
+      "ai_languageModel": [[{"node": "classify-chain", "type": "ai_languageModel", "index": 0}]]
+    },
+    "classify-chain": {
+      "main": [[{"node": "parse-classification", "type": "main", "index": 0}]]
+    },
+    "apply-force-tier": {
+      "main": [[{"node": "dispatch-tier", "type": "main", "index": 0}]]
+    },
+    "parse-classification": {
+      "main": [[{"node": "dispatch-tier", "type": "main", "index": 0}]]
+    },
+    "dispatch-tier": {
+      "main": [
+        [{"node": "call-tier1", "type": "main", "index": 0}],
+        [{"node": "call-tier2", "type": "main", "index": 0}],
+        [{"node": "call-tier3", "type": "main", "index": 0}]
+      ]
+    },
+    "call-tier1": {
+      "main": [[{"node": "format-response", "type": "main", "index": 0}]]
+    },
+    "call-tier2": {
+      "main": [[{"node": "format-response", "type": "main", "index": 0}]]
+    },
+    "call-tier3": {
+      "main": [[{"node": "format-response", "type": "main", "index": 0}]]
+    },
+    "format-response": {
+      "main": [[{"node": "log-route", "type": "main", "index": 0}]]
+    },
+    "log-route": {
+      "main": [[{"node": "respond-success", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "meta": {"instanceId": "9375d63cfeb05cc7d60cb67b35a3537ec9c718318a167baf25781ce46bd9a6ae"},
+  "id": "RouterFlow001",
+  "tags": []
+}

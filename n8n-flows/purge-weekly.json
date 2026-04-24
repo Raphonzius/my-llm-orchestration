@@ -1,0 +1,176 @@
+{
+  "name": "Purge Weekly",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 3 * * 0"}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1200, 0],
+      "id": "c1d2e3f4-0001-4000-8000-000000000001",
+      "name": "cron-sunday-3am"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:8001/purge-candidates",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-976, 0],
+      "id": "c1d2e3f4-0002-4000-8000-000000000002",
+      "name": "list-purge-candidates"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3},
+          "conditions": [
+            {
+              "id": "purge-check-001",
+              "leftValue": "={{ $json.total_stale }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-752, 0],
+      "id": "c1d2e3f4-0003-4000-8000-000000000003",
+      "name": "check-has-stale"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stale = $input.first().json.stale || [];\nreturn stale.map(p => ({json: {path: p}}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-528, -96],
+      "id": "c1d2e3f4-0004-4000-8000-000000000004",
+      "name": "split-stale"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/purge-archive",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "path", "value": "={{ $json.path }}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-304, -96],
+      "id": "c1d2e3f4-0005-4000-8000-000000000005",
+      "name": "archive-stale"
+    },
+    {
+      "parameters": {
+        "jsCode": "const archived = $input.all().map(i => i.json.archived_to);\nconst dups = $('list-purge-candidates').first().json.to_check_dups || [];\nreturn [{json: {\n  stale_archived: archived,\n  dup_candidates: dups.map(p => ({path: p, match: '', score: 0})),\n  archived_count: archived.length\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, -96],
+      "id": "c1d2e3f4-0006-4000-8000-000000000006",
+      "name": "build-purge-report"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/purge-write-report",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "stale_archived", "value": "={{ $json.stale_archived }}"},
+            {"name": "dup_candidates", "value": "={{ $json.dup_candidates }}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [144, -96],
+      "id": "c1d2e3f4-0007-4000-8000-000000000007",
+      "name": "write-purge-report"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/purge-commit",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [368, -96],
+      "id": "c1d2e3f4-0008-4000-8000-000000000008",
+      "name": "purge-commit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/router-log",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "query", "value": "purge-weekly"},
+            {"name": "tier", "value": 0},
+            {"name": "model", "value": "none"},
+            {"name": "reason", "value": "={{ 'archived ' + $('build-purge-report').first().json.archived_count + ' stale notes' }}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [592, -96],
+      "id": "c1d2e3f4-0009-4000-8000-000000000009",
+      "name": "log-purge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "cron-sunday-3am": {
+      "main": [[{"node": "list-purge-candidates", "type": "main", "index": 0}]]
+    },
+    "list-purge-candidates": {
+      "main": [[{"node": "check-has-stale", "type": "main", "index": 0}]]
+    },
+    "check-has-stale": {
+      "main": [
+        [{"node": "split-stale", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "split-stale": {
+      "main": [[{"node": "archive-stale", "type": "main", "index": 0}]]
+    },
+    "archive-stale": {
+      "main": [[{"node": "build-purge-report", "type": "main", "index": 0}]]
+    },
+    "build-purge-report": {
+      "main": [[{"node": "write-purge-report", "type": "main", "index": 0}]]
+    },
+    "write-purge-report": {
+      "main": [[{"node": "purge-commit", "type": "main", "index": 0}]]
+    },
+    "purge-commit": {
+      "main": [[{"node": "log-purge", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "meta": {"instanceId": "9375d63cfeb05cc7d60cb67b35a3537ec9c718318a167baf25781ce46bd9a6ae"},
+  "id": "PurgeWeekly006",
+  "tags": []
+}

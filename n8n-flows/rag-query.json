@@ -1,0 +1,231 @@
+{
+  "name": "RAG Query",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-query",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-1200, 0],
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "webhookId": "rag-query-webhook-001"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "rag-001",
+              "name": "=query",
+              "value": "={{ $json.body.query || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "rag-002",
+              "name": "=domain",
+              "value": "={{ $json.body.domain || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "rag-003",
+              "name": "=collection",
+              "value": "={{ $json.body.collection || 'atlas' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-976, 0],
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "normalize-rag-payload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embed",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "model", "value": "mxbai-embed-large"},
+            {"name": "input", "value": "={{ $json.query }}"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-752, 0],
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "embed-query"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/rag-search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "vector", "value": "={{ $json.embeddings[0] }}"},
+            {"name": "collection", "value": "={{ $('normalize-rag-payload').first().json.collection }}"},
+            {"name": "domain", "value": "={{ $('normalize-rag-payload').first().json.domain }}"},
+            {"name": "limit", "value": 10},
+            {"name": "threshold", "value": 0.70}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-528, 0],
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "search-qdrant"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3},
+          "conditions": [
+            {
+              "id": "rag-check-001",
+              "leftValue": "={{ $json.total }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-304, 0],
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "check-has-results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.results || [];\nconst query = $('normalize-rag-payload').first().json.query;\nconst context_block = results.slice(0, 5).map((r, i) =>\n  `[${i+1}] ${r.title} (${r.file_path})\\n${r.summary}`\n).join('\\n\\n');\nreturn [{json: {\n  query,\n  context_block,\n  sources: results.slice(0, 5),\n  result_count: results.length\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, -96],
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "format-context"
+    },
+    {
+      "parameters": {
+        "model": "gemma4:e4b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [144, 96],
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "llm-gemma4-e4b",
+      "credentials": {
+        "ollamaApi": {
+          "id": "QEuzv5uQ8e5xcGFh",
+          "name": "ollama-desktop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.context_block + '\\n\\nQuestion: ' + $json.query }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Answer using ONLY the context provided. Cite sources by file_path. If context is insufficient, say so clearly. Be concise."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [144, -96],
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "rag-chain"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.text || '';\nreturn {\n  answer: raw.trim(),\n  query: $('format-context').first().json.query,\n  sources: $('format-context').first().json.sources,\n  result_count: $('format-context').first().json.result_count,\n  model: 'gemma4:e4b'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [368, -96],
+      "id": "a1b2c3d4-0009-4000-8000-000000000009",
+      "name": "parse-answer"
+    },
+    {
+      "parameters": {
+        "options": {"responseCode": 200}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [592, -96],
+      "id": "a1b2c3d4-0010-4000-8000-000000000010",
+      "name": "respond-success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\":\"ok\",\"answer\":\"No relevant context found in vault.\",\"sources\":[]}",
+        "options": {"responseCode": 200}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [-80, 96],
+      "id": "a1b2c3d4-0011-4000-8000-000000000011",
+      "name": "respond-no-results"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "normalize-rag-payload", "type": "main", "index": 0}]]
+    },
+    "normalize-rag-payload": {
+      "main": [[{"node": "embed-query", "type": "main", "index": 0}]]
+    },
+    "embed-query": {
+      "main": [[{"node": "search-qdrant", "type": "main", "index": 0}]]
+    },
+    "search-qdrant": {
+      "main": [[{"node": "check-has-results", "type": "main", "index": 0}]]
+    },
+    "check-has-results": {
+      "main": [
+        [{"node": "format-context", "type": "main", "index": 0}],
+        [{"node": "respond-no-results", "type": "main", "index": 0}]
+      ]
+    },
+    "format-context": {
+      "main": [[{"node": "rag-chain", "type": "main", "index": 0}]]
+    },
+    "llm-gemma4-e4b": {
+      "ai_languageModel": [[{"node": "rag-chain", "type": "ai_languageModel", "index": 0}]]
+    },
+    "rag-chain": {
+      "main": [[{"node": "parse-answer", "type": "main", "index": 0}]]
+    },
+    "parse-answer": {
+      "main": [[{"node": "respond-success", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "meta": {"instanceId": "9375d63cfeb05cc7d60cb67b35a3537ec9c718318a167baf25781ce46bd9a6ae"},
+  "id": "RAGQueryFlow003",
+  "tags": []
+}
