@@ -1,0 +1,14 @@
+[Unit]
+Description=Nexus Nightly Curation
+After=network.target nexus-compose.service nexus-api.service
+Requires=nexus-compose.service
+
+[Service]
+Type=oneshot
+User=raphonzius
+WorkingDirectory=/home/raphonzius/llm-orchestration
+Environment=NEXUS_VAULT_PATH=/home/raphonzius/obsidian-nexus
+ExecStart=/home/raphonzius/.venv/bin/python -m pipeline.curation
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Nexus Weekly Purge on Sundays at 03:00
+Requires=purge-weekly.service
+
+[Timer]
+OnCalendar=Sun *-*-* 03:00:00
+Persistent=true
+Unit=purge-weekly.service
+
+[Install]
+WantedBy=timers.target

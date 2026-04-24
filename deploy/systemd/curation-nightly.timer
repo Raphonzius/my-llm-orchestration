@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Nexus Nightly Curation at 02:00
+Requires=curation-nightly.service
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+Unit=curation-nightly.service
+
+[Install]
+WantedBy=timers.target

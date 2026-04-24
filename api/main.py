@@ -15,6 +15,9 @@ import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from pipeline.rag import run_rag_query
+from pipeline.router import route as run_route
+
 app = FastAPI(title="Nexus Pipeline API", version="0.1.0")
 _write_lock = threading.Lock()
 
@@ -377,6 +380,46 @@ class RouterLogRequest(BaseModel):
     model: str
     tokens_estimate: int = 0
     reason: str = ""
+
+
+class RagQueryRequest(BaseModel):
+    query: str
+    domain: str = ""
+    collection: str = "atlas"
+    model: str = "gemma4:e4b"
+    limit: int = 10
+    threshold: float = 0.70
+
+
+@app.post("/rag-query")
+def rag_query(req: RagQueryRequest) -> dict:
+    """Native RAG pipeline: embed → Qdrant → LLM synthesis. Replaces n8n rag-query flow."""
+    try:
+        return run_rag_query(
+            req.query,
+            domain=req.domain,
+            collection=req.collection,
+            model=req.model,
+            limit=req.limit,
+            threshold=req.threshold,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+class RouteRequest(BaseModel):
+    query: str
+    context: str = ""
+    force_tier: int = 0
+
+
+@app.post("/route")
+def route(req: RouteRequest) -> dict:
+    """Native tier-dispatch router. Replaces n8n router flow."""
+    try:
+        return run_route(req.query, context=req.context, force_tier=req.force_tier)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.post("/router-log")
