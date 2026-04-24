@@ -1,0 +1,671 @@
+{
+  "name": "Vault Push Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vault-push",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        -320
+      ],
+      "id": "fd08e3b0-942e-40ea-8166-28997a05320e",
+      "name": "Webhook",
+      "webhookId": "785816e2-939a-45e5-92a9-7954660db36d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ae1499f5-17e6-4086-aa90-c1921f290fbb",
+              "name": "=ref",
+              "value": "={{ $json.body.ref || 'refs/heads/main' }}",
+              "type": "string"
+            },
+            {
+              "id": "e8169097-b4f5-44cb-a290-2ffa6c7f94f4",
+              "name": "=commit",
+              "value": "={{ $json.body.head_commit?.id || 'manual' }}",
+              "type": "string"
+            },
+            {
+              "id": "eaf945f0-6eb3-46ea-9140-5366acb260b5",
+              "name": "=pusher",
+              "value": "={{ $json.body.pusher?.name || 'unknown' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        -320
+      ],
+      "id": "bdf4f477-64c8-4052-b651-b15ba93e2acb",
+      "name": "Git Set"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/delta-index ",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $json.ref }}"
+            },
+            {
+              "name": "commit",
+              "value": "={{ $json.commit }}"
+            },
+            {
+              "name": "pusher",
+              "value": "={{ $json.pusher }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        -320
+      ],
+      "id": "8ee8c7a2-2fbb-445d-9811-10bc6c6bb335",
+      "name": "delta-index"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d80badeb-a40a-47db-879d-d6b571842b90",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        -320
+      ],
+      "id": "d3a15f1e-651d-47bb-aacc-3e1423dacc74",
+      "name": "If-Else-delta-index"
+    },
+    {
+      "parameters": {
+        "model": "gemma4:e4b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1944,
+        -288
+      ],
+      "id": "2eea2bbe-2566-402e-b999-6612cc24f9ea",
+      "name": "gemma4:e4b",
+      "credentials": {
+        "ollamaApi": {
+          "id": "QEuzv5uQ8e5xcGFh",
+          "name": "ollama-desktop"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/ingest-list-clips",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        -416
+      ],
+      "id": "a5e32a88-335b-4088-8c7c-e919ca405149",
+      "name": "ingest-list-clips"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:8001/ingest-read-clip",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "path",
+              "value": "={{ $json.clip_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1648,
+        -512
+      ],
+      "id": "a799a24b-e1f8-437b-9dc7-b7cdd2375877",
+      "name": "ingest-process-clip"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.content }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "/no_think\n\nYou are a metadata extractor. Output ONLY a JSON object wrapped in `json` code fence. No prose, no thinking, no explanation before or after.                                   \n                                                          \nRequired fields:\n- title (string)\n- summary (string, max 200 chars)\n- domain (one of: tech, science, business, health, philosophy, misc)\n- type (one of: concept, entity, pattern, guide, decision)\n- tags (array, max 5 short lowercase strings)\n- entities (array, max 3 proper nouns)\n- key_claims (array, max 3 strings)\n- provenance (always \"extracted\")\n\nExample output:\n```json\n{\"title\":\"...\",\"summary\":\"...\",\"domain\":\"tech\",\"type\":\"concept\",\"tags\":[\"a\",\"b\"],\"entities\":[],\"key_claims\":[\"...\"],\"provenance\":\"extracted\"}\n```\n\nNever invent info. Extract only from the source text."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1872,
+        -512
+      ],
+      "id": "391c1cbe-8405-4a5a-bc0a-c6ccbb1b946d",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const files = $input.first().json.files || [];\nif (files.length === 0) return [];\nreturn files.map(f => ({json: {clip_path: f}}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -512
+      ],
+      "id": "148bae8a-f694-4961-be7a-c8b4aad4b745",
+      "name": "clip_path"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embed",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "mxbai-embed-large"
+            },
+            {
+              "name": "input",
+              "value": "={{ $json.metadata.summary + \"\\n\\n\" + $json.content.slice(0, 500) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2448,
+        -512
+      ],
+      "id": "e17a6995-5f85-44f1-a355-c3e51b76571c",
+      "name": "mxbai-embed"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/ingest-search-qdrant",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "vector",
+              "value": "={{ $json.embeddings[0] }}"
+            },
+            {
+              "name": "collection",
+              "value": "atlas"
+            },
+            {
+              "name": "limit",
+              "value": "3"
+            },
+            {
+              "name": "threshold",
+              "value": "0.80"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2672,
+        -512
+      ],
+      "id": "ac57aeee-40a4-4ed1-bc9a-b5e40c74ddc3",
+      "name": "search-qdrant"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw = $json.text || '';\n\n// get LAST code fence\nconst fenceMatches = [...raw.matchAll(/```(?:json)?\\s*([\\s\\S]*?)```/g)];\nlet jsonStr = fenceMatches.length > 0 ? fenceMatches[fenceMatches.length - 1][1] : (raw.match(/(\\{[\\s\\S]*\\})/) || ['', '{}'])[1];\n\nlet meta = {};\ntry {\n    meta = JSON.parse(jsonStr.trim());\n} catch (e) {\n    meta = {};\n}\n\nreturn {\n    clip_path: $('clip_path').item.json.clip_path, content: $('ingest-process-clip').item.json.content, metadata: {\n        title: meta.title || 'Untitled',\n        summary: meta.summary || '',\n        domain: meta.domain || 'misc',\n        tags: meta.tags || [],\n        entities: meta.entities || [],\n        key_claims: meta.key_claims || []\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2224,
+        -512
+      ],
+      "id": "4dfc2e4a-038d-4a86-a159-5598b1db63e0",
+      "name": "llm_parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/ingest-write-atlas",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "clip_path",
+              "value": "={{ $('llm_parser').item.json.clip_path }}"
+            },
+            {
+              "name": "metadata",
+              "value": "={{ $('llm_parser').item.json.metadata }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('llm_parser').item.json.content }}"
+            },
+            {
+              "name": "decision",
+              "value": "={{ $json.decision }}"
+            },
+            {
+              "name": "merge_target",
+              "value": "={{ $json.best_match_path }}"
+            },
+            {
+              "name": "model",
+              "value": "gemma4:e4b"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2896,
+        -512
+      ],
+      "id": "ef594a97-6e36-40d4-837c-9b5b13a48d82",
+      "name": "write-atlas"
+    },
+    {
+      "parameters": {
+        "jsCode": "const all = $input.all();\nreturn [{\n    json: {\n        processed: all.length,\n        created: all.filter(i => i.json.action === 'created').length,\n        merged: all.filter(i => i.json.action === 'merged').length,\n        paths: all.map(i => i.json.atlas_path)\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        -512
+      ],
+      "id": "aabf5e08-1534-4284-a29b-2e54a8801228",
+      "name": "atlas-aggregator"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/ingest-commit ",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ 'ingest: ' + $json.created + ' created, ' +   $json.merged + ' merged' }}"
+            },
+            {
+              "name": "model",
+              "value": "gemma4-e4b"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3344,
+        -512
+      ],
+      "id": "ce7bc8cd-43e6-4170-abe5-073897dc3689",
+      "name": "ingest-commit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "704374eb-2f9b-4456-a6a6-f0f2081dec0e",
+              "leftValue": "={{ $json.files.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        -416
+      ],
+      "id": "981f72d3-6c3d-4ffa-bfd0-17689ddb7b0b",
+      "name": "If-Else-ingest-list-clips"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        976,
+        -224
+      ],
+      "id": "2d2f430b-9fa4-4199-9e8e-b91a8c2e7b69",
+      "name": "exit delta-index error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"ok\",\n  \"processed\": 0,\n  \"message\": \"no new clips\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1424,
+        -320
+      ],
+      "id": "aefedc18-07c9-44e5-a434-5b427996e041",
+      "name": "Exit list-clips no clips"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3568,
+        -512
+      ],
+      "id": "aed1b101-df52-4bbe-8944-a438c1296529",
+      "name": "Exit commit success"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Git Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Git Set": {
+      "main": [
+        [
+          {
+            "node": "delta-index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delta-index": {
+      "main": [
+        [
+          {
+            "node": "If-Else-delta-index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Else-delta-index": {
+      "main": [
+        [
+          {
+            "node": "ingest-list-clips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "exit delta-index error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemma4:e4b": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ingest-list-clips": {
+      "main": [
+        [
+          {
+            "node": "If-Else-ingest-list-clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ingest-process-clip": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "llm_parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clip_path": {
+      "main": [
+        [
+          {
+            "node": "ingest-process-clip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mxbai-embed": {
+      "main": [
+        [
+          {
+            "node": "search-qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search-qdrant": {
+      "main": [
+        [
+          {
+            "node": "write-atlas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "llm_parser": {
+      "main": [
+        [
+          {
+            "node": "mxbai-embed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "write-atlas": {
+      "main": [
+        [
+          {
+            "node": "atlas-aggregator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "atlas-aggregator": {
+      "main": [
+        [
+          {
+            "node": "ingest-commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ingest-commit": {
+      "main": [
+        [
+          {
+            "node": "Exit commit success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If-Else-ingest-list-clips": {
+      "main": [
+        [
+          {
+            "node": "clip_path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exit list-clips no clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "179dc708-247d-4a6f-b107-cb48b805d333",
+  "meta": {
+    "instanceId": "9375d63cfeb05cc7d60cb67b35a3537ec9c718318a167baf25781ce46bd9a6ae"
+  },
+  "id": "A9JHoSMg3LI23VjR",
+  "tags": []
+}
