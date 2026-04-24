@@ -311,27 +311,57 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
 - [X] Open n8n dashboard: `http://localhost:25678` via SSH tunnel — owner account created
 - [X] Webhook receiver flow created: `POST /webhook/vault-push` (active)
 - [X] Webhook tested via curl — `{"message":"Workflow was started"}` confirmed
-- [ ] Test post-push hook end-to-end: push from Obsidian Git → n8n receives automatically
-- [ ] Clone obsidian-nexus on desktop + activate webhook processing logic
+- [X] Test post-push hook end-to-end: push from Obsidian Git → n8n Vault Push Pipeline confirmed working
+- [X] Clone obsidian-nexus on desktop — vault live at `~/obsidian-nexus`
 
-## Desktop — Next Session
+## Phase C — n8n Flows (Pipeline)
 
-- [ ] Clone obsidian-nexus on desktop:
-  ```bash
-  git clone https://github.com/Raphonzius/obsidian-nexus.git ~/obsidian-nexus
-  cp ~/obsidian-nexus/.env.desktop ~/obsidian-nexus/.env.local
-  ```
-- [ ] Verify webhook infrastructure (post-push hook):
-  - Push from ultrabook vault
-  - Monitor n8n for incoming `vault-push` webhook at `/webhook/vault-push`
-- [ ] Install remaining Obsidian plugins (optional for ultrabook):
-  - Web Clipper + Tag Wrangler
+### Done
+- [X] nexus-api deployed: `http://localhost:8001` (systemd unit `nexus-api.service`)
+  - Endpoints: /health, /delta-index, /embed-all
+  - Endpoints: /ingest-list-clips, /ingest-read-clip, /ingest-search-qdrant, /ingest-write-atlas, /ingest-commit
+  - Endpoints: /rag-search, /router-log
+  - Endpoints: /curate-list, /curate-read, /curate-write, /curate-commit
+  - Endpoints: /purge-candidates, /purge-archive, /purge-write-report, /purge-commit
+- [X] Vault Push Pipeline (flow 2+4) — active, tested end-to-end
+  - `_inbox/clips/` → gemma4:e4b extract → mxbai embed → Qdrant search → atlas/ write → commit
+- [X] n8n flows 1/3/5/6 JSON created at `n8n-flows/`
+
+### Import + Test (next session)
+
+- [ ] Pull repo on desktop: `ssh nexus && cd ~/llm-orchestration && git pull && systemctl restart nexus-api`
+- [ ] Import + test **Flow 3 — RAG Query** (`n8n-flows/rag-query.json`):
+  - Import in n8n → activate → test: `curl -X POST http://localhost:25678/webhook/rag-query -H "Content-Type: application/json" -d "{\"query\":\"What is Qdrant?\"}"`
+  - Verify answer + sources returned
+- [ ] Import + configure **Flow 1 — Router** (`n8n-flows/router.json`):
+  - Pull gemma4:e2b on desktop: `ollama pull gemma4:e2b`
+  - Set `ANTHROPIC_API_KEY` in n8n: Settings → Environment Variables
+  - Activate + test: `curl -X POST http://localhost:25678/webhook/route -H "Content-Type: application/json" -d "{\"query\":\"What is RAG?\"}"`
+  - Verify tier classification + answer returned
+- [ ] Import **Flow 5 — Curation Nightly** (`n8n-flows/curation-nightly.json`):
+  - Pull gemma4:26b on desktop: `ollama pull gemma4:26b` (large — takes time)
+  - Test manually via n8n "Execute Workflow" before enabling cron
+  - Check atlas/ notes updated from `status: seed` → `status: active`
+- [ ] Import **Flow 6 — Purge Weekly** (`n8n-flows/purge-weekly.json`):
+  - Test manually first — check `_system/purge-candidates.md` generated correctly
+  - Only activate cron after manual test passes
+  - Review purge-candidates.md before trusting auto-archive
+
+## Phase D — Feedback Loops (pending)
+
+- [ ] Wire `vault-stats.py` to n8n cron (daily)
+- [ ] Wire `sync-chromadb.py` to n8n cron (daily)
+- [ ] ChromaDB Docker on ultrabook (see ultrabook section)
+
+## Big Hunt Remaining
+
+- [ ] Tailscale mesh (replaces SSH tunnel) — see BIG HUNT 3 above
+- [ ] Router: route gemma4:e4b → ultrabook after Tailscale (see BIG HUNT 1)
+- [ ] ChromaDB on ultrabook (local L0/L1 cache)
 
 ---
 
 ## Not yet (future phases)
 
-These are handled by agents once infrastructure is running:
-- n8n flow creation (Phase C) — agent builds these
-- Feedback loop automation (Phase D) — agent builds these
 - Prompt tuning + RAG optimization (Phase E) — collaborative
+- Curation quality review after first nightly run
