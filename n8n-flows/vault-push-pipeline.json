@@ -51,12 +51,12 @@
         -320
       ],
       "id": "bdf4f477-64c8-4052-b651-b15ba93e2acb",
-      "name": "Git Set"
+      "name": "normalize-payload"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8001/delta-index ",
+        "url": "http://host.docker.internal:8001/delta-index",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -123,7 +123,7 @@
         -320
       ],
       "id": "d3a15f1e-651d-47bb-aacc-3e1423dacc74",
-      "name": "If-Else-delta-index"
+      "name": "check-delta-ok"
     },
     {
       "parameters": {
@@ -137,7 +137,7 @@
         -288
       ],
       "id": "2eea2bbe-2566-402e-b999-6612cc24f9ea",
-      "name": "gemma4:e4b",
+      "name": "llm-gemma4-e4b",
       "credentials": {
         "ollamaApi": {
           "id": "QEuzv5uQ8e5xcGFh",
@@ -182,7 +182,7 @@
         -512
       ],
       "id": "a799a24b-e1f8-437b-9dc7-b7cdd2375877",
-      "name": "ingest-process-clip"
+      "name": "read-clip"
     },
     {
       "parameters": {
@@ -205,7 +205,7 @@
         -512
       ],
       "id": "391c1cbe-8405-4a5a-bc0a-c6ccbb1b946d",
-      "name": "Basic LLM Chain"
+      "name": "extract-metadata"
     },
     {
       "parameters": {
@@ -218,7 +218,7 @@
         -512
       ],
       "id": "148bae8a-f694-4961-be7a-c8b4aad4b745",
-      "name": "clip_path"
+      "name": "split-clips"
     },
     {
       "parameters": {
@@ -287,7 +287,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const raw = $json.text || '';\n\n// get LAST code fence\nconst fenceMatches = [...raw.matchAll(/```(?:json)?\\s*([\\s\\S]*?)```/g)];\nlet jsonStr = fenceMatches.length > 0 ? fenceMatches[fenceMatches.length - 1][1] : (raw.match(/(\\{[\\s\\S]*\\})/) || ['', '{}'])[1];\n\nlet meta = {};\ntry {\n    meta = JSON.parse(jsonStr.trim());\n} catch (e) {\n    meta = {};\n}\n\nreturn {\n    clip_path: $('clip_path').item.json.clip_path, content: $('ingest-process-clip').item.json.content, metadata: {\n        title: meta.title || 'Untitled',\n        summary: meta.summary || '',\n        domain: meta.domain || 'misc',\n        tags: meta.tags || [],\n        entities: meta.entities || [],\n        key_claims: meta.key_claims || []\n    }\n};"
+        "jsCode": "const raw = $json.text || '';\n\n// get LAST code fence\nconst fenceMatches = [...raw.matchAll(/```(?:json)?\\s*([\\s\\S]*?)```/g)];\nlet jsonStr = fenceMatches.length > 0 ? fenceMatches[fenceMatches.length - 1][1] : (raw.match(/(\\{[\\s\\S]*\\})/) || ['', '{}'])[1];\n\nlet meta = {};\ntry {\n    meta = JSON.parse(jsonStr.trim());\n} catch (e) {\n    meta = {};\n}\n\nreturn {\n    clip_path: $('split-clips').item.json.clip_path, content: $('read-clip').item.json.content, metadata: {\n        title: meta.title || 'Untitled',\n        summary: meta.summary || '',\n        domain: meta.domain || 'misc',\n        tags: meta.tags || [],\n        entities: meta.entities || [],\n        key_claims: meta.key_claims || []\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -296,7 +296,7 @@
         -512
       ],
       "id": "4dfc2e4a-038d-4a86-a159-5598b1db63e0",
-      "name": "llm_parser"
+      "name": "parse-metadata"
     },
     {
       "parameters": {
@@ -306,16 +306,16 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "clip_path",
-              "value": "={{ $('llm_parser').item.json.clip_path }}"
+              "name": "split-clips",
+              "value": "={{ $('parse-metadata').item.json.clip_path }}"
             },
             {
               "name": "metadata",
-              "value": "={{ $('llm_parser').item.json.metadata }}"
+              "value": "={{ $('parse-metadata').item.json.metadata }}"
             },
             {
               "name": "body",
-              "value": "={{ $('llm_parser').item.json.content }}"
+              "value": "={{ $('parse-metadata').item.json.content }}"
             },
             {
               "name": "decision",
@@ -358,7 +358,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8001/ingest-commit ",
+        "url": "http://host.docker.internal:8001/ingest-commit",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -368,7 +368,7 @@
             },
             {
               "name": "model",
-              "value": "gemma4-e4b"
+              "value": "gemma4:e4b"
             }
           ]
         },
@@ -414,7 +414,7 @@
         -416
       ],
       "id": "981f72d3-6c3d-4ffa-bfd0-17689ddb7b0b",
-      "name": "If-Else-ingest-list-clips"
+      "name": "check-new-clips"
     },
     {
       "parameters": {
@@ -429,7 +429,7 @@
         -224
       ],
       "id": "2d2f430b-9fa4-4199-9e8e-b91a8c2e7b69",
-      "name": "exit delta-index error"
+      "name": "respond-delta-error"
     },
     {
       "parameters": {
@@ -446,7 +446,7 @@
         -320
       ],
       "id": "aefedc18-07c9-44e5-a434-5b427996e041",
-      "name": "Exit list-clips no clips"
+      "name": "respond-no-clips"
     },
     {
       "parameters": {
@@ -461,7 +461,7 @@
         -512
       ],
       "id": "aed1b101-df52-4bbe-8944-a438c1296529",
-      "name": "Exit commit success"
+      "name": "respond-success"
     }
   ],
   "pinData": {},
