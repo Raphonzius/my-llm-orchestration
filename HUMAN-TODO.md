@@ -323,50 +323,34 @@ Pattern: each bootstrap is ~30 lines. All heavy content lives once in `.skills/`
   - Endpoints: /rag-search, /router-log
   - Endpoints: /curate-list, /curate-read, /curate-write, /curate-commit
   - Endpoints: /purge-candidates, /purge-archive, /purge-write-report, /purge-commit
-- [X] Vault Push Pipeline (flow 2+4) — active, tested end-to-end in n8n
+- [X] Vault Push Pipeline (flow 2+4) — active, tested end-to-end
   - `_inbox/clips/` → gemma4:e4b extract → mxbai embed → Qdrant search → atlas/ write → commit
-- [X] n8n flows 1/3/5/6 JSON created at `n8n-flows/` (POC validation kept as reference)
-- [X] **Native Python port** (2026-04-24) — replaces n8n flows 1/3/5/6:
-  - `pipeline/common.py` — shared helpers (ollama_embed, ollama_generate, qdrant_search, run_git, extract_last_json, slugify, append_log)
-  - `pipeline/rag.py` — RAG flow (was rag-query.json) + `POST /rag-query` FastAPI route
-  - `pipeline/router.py` — tier dispatch (was router.json) + `POST /route` FastAPI route
-  - `pipeline/curation.py` — nightly curation (was curation-nightly.json), runs via systemd timer
-  - `pipeline/purge.py` — weekly purge (was purge-weekly.json), runs via systemd timer
-  - Systemd units added: `deploy/systemd/{curation-nightly,purge-weekly}.{service,timer}`
+- [X] **Native Python pipeline** (2026-04-24) — n8n fully replaced:
+  - `pipeline/common.py` — shared helpers
+  - `pipeline/rag.py` + `POST /rag-query` — tested, working
+  - `pipeline/router.py` + `POST /route` — tier 1/2/3 dispatch tested, working
+  - `pipeline/curation.py` — systemd timer enabled (fires daily 02:00)
+  - `pipeline/purge.py` — systemd timer enabled (fires Sun 03:00)
+- [X] All native pipeline routes tested on desktop — `/rag-query`, `/route`, `/delta-index`
+- [X] Systemd timers installed: `curation-nightly.timer`, `purge-weekly.timer`
+- [X] n8n decommissioned — no longer needed
 
-### Import + Test — native pipeline (next session on desktop)
+### Pending
 
-- [ ] Pull repo on desktop: `ssh nexus && cd ~/llm-orchestration && git pull`
-- [ ] Install new Python deps: `/home/raphonzius/.venv/bin/pip install -r api/requirements.txt`
-- [ ] Restart API: `sudo systemctl restart nexus-api`
-- [ ] Pull models on desktop (if not already): `ollama pull gemma4:e2b && ollama pull gemma4:26b`
-- [ ] Set `ANTHROPIC_API_KEY` env for nexus-api.service (add `Environment=ANTHROPIC_API_KEY=sk-ant-...` or use `EnvironmentFile=`)
-- [ ] Test **RAG**: `curl -X POST http://localhost:8001/rag-query -H "Content-Type: application/json" -d '{"query":"What is Qdrant?"}'`
-- [ ] Test **Router** (force tier 1): `curl -X POST http://localhost:8001/route -H "Content-Type: application/json" -d '{"query":"2+2?","force_tier":1}'`
-- [ ] Test **Router** (auto classify): `curl -X POST http://localhost:8001/route -d '{"query":"Summarize the key ideas of RAG"}'` (should route tier 2)
-- [ ] Test **Curation dry-run**: `python -m pipeline.curation --dry-run` → lists seed notes, no writes
-- [ ] Test **Curation live** (1-2 notes only first): `python -m pipeline.curation` → verify commit + push
-- [ ] Test **Purge dry-run**: `python -m pipeline.purge --dry-run` → lists stale + to-check
-- [ ] Install systemd timers:
+- [ ] Set `ANTHROPIC_API_KEY` in nexus-api.service for tier 3 routing:
   ```bash
-  sudo cp deploy/systemd/curation-nightly.{service,timer} /etc/systemd/system/
-  sudo cp deploy/systemd/purge-weekly.{service,timer} /etc/systemd/system/
-  sudo systemctl daemon-reload
-  sudo systemctl enable --now curation-nightly.timer purge-weekly.timer
-  sudo systemctl list-timers --all | grep -E 'curation|purge'
+  # edit /etc/systemd/system/nexus-api.service — add under [Service]:
+  # Environment=ANTHROPIC_API_KEY=sk-ant-...
+  sudo systemctl daemon-reload && sudo systemctl restart nexus-api
   ```
-
-### Decommission n8n (after native pipeline validated)
-
-- [ ] Remove n8n service from `deploy/docker-compose.yml`
-- [ ] Delete `n8n-flows/*.json` (keep in git history as reference)
+- [ ] Remove n8n service from `deploy/docker-compose.yml` + `docker compose rm -f n8n`
+- [ ] Delete `n8n-flows/*.json` (already in git history)
 - [ ] Update `deploy/verify.sh` — drop n8n check
-- [ ] Shutdown Windows Startup VBS tunnel for port 25678 (keep 21434, 26333, 26334 during Tailscale transition)
 
 ## Phase D — Feedback Loops (pending)
 
-- [ ] Wire `vault-stats.py` to n8n cron (daily)
-- [ ] Wire `sync-chromadb.py` to n8n cron (daily)
+- [ ] Wire `vault-stats.py` to systemd timer (daily) — add `vault-stats.service` + `vault-stats.timer`
+- [ ] Wire `sync-chromadb.py` to systemd timer (daily) — same pattern as curation/purge
 - [ ] ChromaDB Docker on ultrabook (see ultrabook section)
 
 ## Big Hunt Remaining
