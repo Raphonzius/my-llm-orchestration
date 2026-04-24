@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        80,
-        -320
+        -1344,
+        192
       ],
-      "id": "fd08e3b0-942e-40ea-8166-28997a05320e",
+      "id": "3508fd47-11e2-4b3d-a871-f7b704d98ad3",
       "name": "Webhook",
       "webhookId": "785816e2-939a-45e5-92a9-7954660db36d"
     },
@@ -47,10 +47,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        304,
-        -320
+        -1120,
+        192
       ],
-      "id": "bdf4f477-64c8-4052-b651-b15ba93e2acb",
+      "id": "dbb71862-8800-4efe-b5be-c7a60cb87f3b",
       "name": "normalize-payload"
     },
     {
@@ -85,10 +85,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        528,
-        -320
+        -896,
+        192
       ],
-      "id": "8ee8c7a2-2fbb-445d-9811-10bc6c6bb335",
+      "id": "144bc6e9-cdd8-4749-86c8-bf7dc8e3e976",
       "name": "delta-index"
     },
     {
@@ -119,10 +119,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        752,
-        -320
+        -672,
+        192
       ],
-      "id": "d3a15f1e-651d-47bb-aacc-3e1423dacc74",
+      "id": "5c81eb25-7ef5-4fb6-b495-2f431c031741",
       "name": "check-delta-ok"
     },
     {
@@ -133,10 +133,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        1944,
-        -288
+        520,
+        224
       ],
-      "id": "2eea2bbe-2566-402e-b999-6612cc24f9ea",
+      "id": "d460488d-94ac-42f1-9662-70c969fb0196",
       "name": "llm-gemma4-e4b",
       "credentials": {
         "ollamaApi": {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        976,
-        -416
+        -448,
+        96
       ],
-      "id": "a5e32a88-335b-4088-8c7c-e919ca405149",
+      "id": "b5a106a6-0c1a-41f1-9f30-a009835d40cd",
       "name": "ingest-list-clips"
     },
     {
@@ -178,10 +178,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1648,
-        -512
+        224,
+        0
       ],
-      "id": "a799a24b-e1f8-437b-9dc7-b7cdd2375877",
+      "id": "9be4e14d-2ee2-4c8f-9fbb-76e12c95f236",
       "name": "read-clip"
     },
     {
@@ -201,10 +201,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        1872,
-        -512
+        448,
+        0
       ],
-      "id": "391c1cbe-8405-4a5a-bc0a-c6ccbb1b946d",
+      "id": "47ab6c5e-a1b8-4411-8ae7-071dee768fa3",
       "name": "extract-metadata"
     },
     {
@@ -214,10 +214,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1424,
-        -512
+        0,
+        0
       ],
-      "id": "148bae8a-f694-4961-be7a-c8b4aad4b745",
+      "id": "5a72a1d2-9d1a-48ac-9b51-0b3b4b7fc199",
       "name": "split-clips"
     },
     {
@@ -242,10 +242,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2448,
-        -512
+        1024,
+        0
       ],
-      "id": "e17a6995-5f85-44f1-a355-c3e51b76571c",
+      "id": "89f1d76d-3a56-4918-88d2-d79e8b48b283",
       "name": "mxbai-embed"
     },
     {
@@ -278,10 +278,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2672,
-        -512
+        1248,
+        0
       ],
-      "id": "ac57aeee-40a4-4ed1-bc9a-b5e40c74ddc3",
+      "id": "082643d8-7ae3-461a-889b-3afa2e1b3879",
       "name": "search-qdrant"
     },
     {
@@ -292,10 +292,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2224,
-        -512
+        800,
+        0
       ],
-      "id": "4dfc2e4a-038d-4a86-a159-5598b1db63e0",
+      "id": "3b69ee09-1c3f-4bc4-a546-6ba2bfed4999",
       "name": "parse-metadata"
     },
     {
@@ -306,7 +306,7 @@
         "bodyParameters": {
           "parameters": [
             {
-              "name": "split-clips",
+              "name": "clip_path",
               "value": "={{ $('parse-metadata').item.json.clip_path }}"
             },
             {
@@ -336,10 +336,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2896,
-        -512
+        1472,
+        0
       ],
-      "id": "ef594a97-6e36-40d4-837c-9b5b13a48d82",
+      "id": "b22bddf7-3463-49b9-b3a6-d6f87d98aaec",
       "name": "write-atlas"
     },
     {
@@ -349,10 +349,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3120,
-        -512
+        1696,
+        0
       ],
-      "id": "aabf5e08-1534-4284-a29b-2e54a8801228",
+      "id": "f7fa3f56-511e-42e1-beb9-66b1db3f4edc",
       "name": "atlas-aggregator"
     },
     {
@@ -377,10 +377,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3344,
-        -512
+        1920,
+        0
       ],
-      "id": "ce7bc8cd-43e6-4170-abe5-073897dc3689",
+      "id": "47e91a0c-da2b-4c96-ba6a-a764a18b14ba",
       "name": "ingest-commit"
     },
     {
@@ -410,10 +410,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1200,
-        -416
+        -224,
+        96
       ],
-      "id": "981f72d3-6c3d-4ffa-bfd0-17689ddb7b0b",
+      "id": "a7a30fed-4213-47ac-ad8f-73e8a4ca77fb",
       "name": "check-new-clips"
     },
     {
@@ -425,10 +425,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        976,
-        -224
+        -448,
+        288
       ],
-      "id": "2d2f430b-9fa4-4199-9e8e-b91a8c2e7b69",
+      "id": "54a15524-de2b-47be-bfb9-8e48f3cbb71d",
       "name": "respond-delta-error"
     },
     {
@@ -442,10 +442,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1424,
-        -320
+        0,
+        192
       ],
-      "id": "aefedc18-07c9-44e5-a434-5b427996e041",
+      "id": "6806d099-5867-4ec4-a76c-706b7b0ac8d2",
       "name": "respond-no-clips"
     },
     {
@@ -457,121 +457,15 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3568,
-        -512
+        2144,
+        0
       ],
-      "id": "aed1b101-df52-4bbe-8944-a438c1296529",
+      "id": "f13a08a3-811f-4b99-9155-27ede3751f20",
       "name": "respond-success"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Git Set",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Git Set": {
-      "main": [
-        [
-          {
-            "node": "delta-index",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "delta-index": {
-      "main": [
-        [
-          {
-            "node": "If-Else-delta-index",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If-Else-delta-index": {
-      "main": [
-        [
-          {
-            "node": "ingest-list-clips",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "exit delta-index error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "gemma4:e4b": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Basic LLM Chain",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "ingest-list-clips": {
-      "main": [
-        [
-          {
-            "node": "If-Else-ingest-list-clips",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "ingest-process-clip": {
-      "main": [
-        [
-          {
-            "node": "Basic LLM Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Basic LLM Chain": {
-      "main": [
-        [
-          {
-            "node": "llm_parser",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "clip_path": {
-      "main": [
-        [
-          {
-            "node": "ingest-process-clip",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "mxbai-embed": {
       "main": [
         [
@@ -588,17 +482,6 @@
         [
           {
             "node": "write-atlas",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "llm_parser": {
-      "main": [
-        [
-          {
-            "node": "mxbai-embed",
             "type": "main",
             "index": 0
           }
@@ -627,29 +510,146 @@
         ]
       ]
     },
-    "ingest-commit": {
+    "Webhook": {
       "main": [
         [
           {
-            "node": "Exit commit success",
+            "node": "normalize-payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "If-Else-ingest-list-clips": {
+    "normalize-payload": {
       "main": [
         [
           {
-            "node": "clip_path",
+            "node": "delta-index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delta-index": {
+      "main": [
+        [
+          {
+            "node": "check-delta-ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-delta-ok": {
+      "main": [
+        [
+          {
+            "node": "ingest-list-clips",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Exit list-clips no clips",
+            "node": "respond-delta-error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ingest-list-clips": {
+      "main": [
+        [
+          {
+            "node": "check-new-clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-new-clips": {
+      "main": [
+        [
+          {
+            "node": "split-clips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "respond-no-clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split-clips": {
+      "main": [
+        [
+          {
+            "node": "read-clip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read-clip": {
+      "main": [
+        [
+          {
+            "node": "extract-metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "llm-gemma4-e4b": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "extract-metadata",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-metadata": {
+      "main": [
+        [
+          {
+            "node": "parse-metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse-metadata": {
+      "main": [
+        [
+          {
+            "node": "mxbai-embed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ingest-commit": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
             "type": "main",
             "index": 0
           }
@@ -662,10 +662,10 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "179dc708-247d-4a6f-b107-cb48b805d333",
+  "versionId": "9414001b-7cb2-42c6-a432-2d1ae172d147",
   "meta": {
     "instanceId": "9375d63cfeb05cc7d60cb67b35a3537ec9c718318a167baf25781ce46bd9a6ae"
   },
-  "id": "A9JHoSMg3LI23VjR",
+  "id": "tBWutlX2R4mudimh",
   "tags": []
 }
