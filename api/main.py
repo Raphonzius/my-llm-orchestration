@@ -305,7 +305,249 @@ def ingest_write_atlas(req: IngestWriteRequest) -> IngestWriteResponse:
 
 class CommitRequest(BaseModel):
     message: str = "ingest: new notes"
-    model: str = "gemma4-26b"
+    model: str = "gemma4:e4b"
+
+
+# ============================================================================
+# RAG endpoints (Flow 3)
+# ============================================================================
+
+
+class RagSearchRequest(BaseModel):
+    vector: list[float]
+    collection: str = "atlas"
+    domain: str = ""
+    limit: int = 10
+    threshold: float = 0.70
+
+
+class RagResult(BaseModel):
+    file_path: str
+    title: str
+    summary: str
+    score: float
+    domain: str
+
+
+class RagSearchResponse(BaseModel):
+    status: str
+    results: list[RagResult]
+    total: int
+
+
+@app.post("/rag-search")
+def rag_search(req: RagSearchRequest) -> RagSearchResponse:
+    """Vector search Qdrant with optional domain filter."""
+    payload: dict = {
+        "vector": req.vector,
+        "limit": req.limit,
+        "score_threshold": req.threshold,
+        "with_payload": True,
+    }
+    if req.domain:
+        payload["filter"] = {"must": [{"key": "domain", "match": {"value": req.domain}}]}
+
+    try:
+        resp = requests.post(
+            f"{QDRANT_URL}/collections/{req.collection}/points/search",
+            json=payload,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json().get("result", [])
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    results = [
+        RagResult(
+            file_path=r.get("payload", {}).get("file_path") or r.get("payload", {}).get("path", ""),
+            title=r.get("payload", {}).get("title", "Untitled"),
+            summary=r.get("payload", {}).get("summary", ""),
+            score=r.get("score", 0.0),
+            domain=r.get("payload", {}).get("domain", ""),
+        )
+        for r in raw
+    ]
+    return RagSearchResponse(status="ok", results=results, total=len(results))
+
+
+class RouterLogRequest(BaseModel):
+    query: str
+    tier: int
+    model: str
+    tokens_estimate: int = 0
+    reason: str = ""
+
+
+@app.post("/router-log")
+def router_log(req: RouterLogRequest) -> dict:
+    """Append router decision to _system/log.md."""
+    log_file = VAULT_PATH / "_system" / "log.md"
+    log_file.parent.mkdir(exist_ok=True)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    entry = f"- {now} | tier:{req.tier} | {req.model} | {req.reason} | `{req.query[:80]}`\n"
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(entry)
+    return {"status": "ok"}
+
+
+# ============================================================================
+# Curation endpoints (Flow 5)
+# ============================================================================
+
+
+@app.get("/curate-list")
+def curate_list() -> dict:
+    """Find atlas notes with status: seed."""
+    seeds = []
+    for f in (VAULT_PATH / "atlas").rglob("*.md"):
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "status: seed" in text or 'status: "seed"' in text:
+            seeds.append(f.relative_to(VAULT_PATH).as_posix())
+    return {"status": "ok", "files": seeds, "total": len(seeds)}
+
+
+class CurateReadResponse(BaseModel):
+    status: str
+    path: str
+    content: str
+
+
+@app.post("/curate-read")
+def curate_read(path: str) -> CurateReadResponse:
+    """Read an atlas note for curation."""
+    target = VAULT_PATH / path
+    if not target.exists():
+        raise HTTPException(status_code=404, detail=f"Not found: {path}")
+    return CurateReadResponse(status="ok", path=path, content=target.read_text(encoding="utf-8"))
+
+
+class CurateWriteRequest(BaseModel):
+    path: str
+    content: str
+
+
+@app.post("/curate-write")
+def curate_write(req: CurateWriteRequest) -> dict:
+    """Write curated note back (status seed → active)."""
+    target = VAULT_PATH / req.path
+    if not target.exists():
+        raise HTTPException(status_code=404, detail=f"Not found: {req.path}")
+    with _write_lock:
+        target.write_text(req.content, encoding="utf-8")
+    return {"status": "ok", "path": req.path, "action": "curated"}
+
+
+@app.post("/curate-commit")
+def curate_commit() -> CommandResult:
+    """Commit and push curation changes."""
+    add = run(["git", "add", "atlas/"], cwd=VAULT_PATH)
+    if add.exit_code != 0:
+        raise HTTPException(status_code=500, detail=add.stderr)
+    status = run(["git", "status", "--porcelain"], cwd=VAULT_PATH)
+    if not status.stdout.strip():
+        return CommandResult(status="ok", stdout="nothing to commit", stderr="", exit_code=0)
+    commit = run(["git", "commit", "-m", "[llm:gemma4-26b] curate: rewrite seed notes"], cwd=VAULT_PATH)
+    if commit.exit_code != 0:
+        raise HTTPException(status_code=500, detail=commit.stderr)
+    push = run(["git", "push"], cwd=VAULT_PATH)
+    if push.exit_code != 0:
+        raise HTTPException(status_code=500, detail=push.stderr)
+    return push
+
+
+# ============================================================================
+# Purge endpoints (Flow 6)
+# ============================================================================
+
+
+@app.get("/purge-candidates")
+def purge_candidates() -> dict:
+    """Find low-quality stale atlas notes for archiving."""
+    from datetime import timedelta
+    stale_threshold = datetime.now(timezone.utc) - timedelta(days=30)
+    stale, to_check = [], []
+    for f in (VAULT_PATH / "atlas").rglob("*.md"):
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "provenance: human" in text:
+            continue
+        is_seed = "status: seed" in text or 'status: "seed"' in text
+        is_low = "confidence: low" in text or "key_claims: []" in text
+        mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+        rel = f.relative_to(VAULT_PATH).as_posix()
+        if is_seed and is_low and mtime < stale_threshold:
+            stale.append(rel)
+        elif is_seed:
+            to_check.append(rel)
+    return {"status": "ok", "stale": stale, "to_check_dups": to_check, "total_stale": len(stale)}
+
+
+class PurgeArchiveRequest(BaseModel):
+    path: str
+
+
+@app.post("/purge-archive")
+def purge_archive(req: PurgeArchiveRequest) -> dict:
+    """Move note to _inbox/archived/ (never delete)."""
+    src = VAULT_PATH / req.path
+    if not src.exists():
+        raise HTTPException(status_code=404, detail=f"Not found: {req.path}")
+    archived_dir = VAULT_PATH / "_inbox" / "archived"
+    archived_dir.mkdir(parents=True, exist_ok=True)
+    dest = archived_dir / src.name
+    i = 2
+    while dest.exists():
+        dest = archived_dir / f"{src.stem}-{i}{src.suffix}"
+        i += 1
+    with _write_lock:
+        src.rename(dest)
+    return {"status": "ok", "archived_to": dest.relative_to(VAULT_PATH).as_posix()}
+
+
+class PurgeReportRequest(BaseModel):
+    stale_archived: list[str] = []
+    dup_candidates: list[dict] = []
+
+
+@app.post("/purge-write-report")
+def purge_write_report(req: PurgeReportRequest) -> dict:
+    """Write purge summary to _system/purge-candidates.md for human review."""
+    report_file = VAULT_PATH / "_system" / "purge-candidates.md"
+    report_file.parent.mkdir(exist_ok=True)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    lines = [f"# Purge Report — {now}\n"]
+    lines.append(f"\n## Archived ({len(req.stale_archived)} notes)\n")
+    for p in req.stale_archived:
+        lines.append(f"- {p}\n")
+    lines.append(f"\n## Duplicate Candidates ({len(req.dup_candidates)} pairs — review manually)\n")
+    for d in req.dup_candidates:
+        lines.append(f"- `{d.get('path')}` ↔ `{d.get('match')}` (score: {d.get('score', 0):.3f})\n")
+    report_file.write_text("".join(lines), encoding="utf-8")
+    return {"status": "ok", "report": str(report_file.relative_to(VAULT_PATH))}
+
+
+@app.post("/purge-commit")
+def purge_commit() -> CommandResult:
+    """Commit purge changes."""
+    add = run(["git", "add", "atlas/", "_inbox/archived/", "_system/purge-candidates.md"], cwd=VAULT_PATH)
+    if add.exit_code != 0:
+        raise HTTPException(status_code=500, detail=add.stderr)
+    status = run(["git", "status", "--porcelain"], cwd=VAULT_PATH)
+    if not status.stdout.strip():
+        return CommandResult(status="ok", stdout="nothing to commit", stderr="", exit_code=0)
+    commit = run(["git", "commit", "-m", "chore: purge stale atlas notes"], cwd=VAULT_PATH)
+    if commit.exit_code != 0:
+        raise HTTPException(status_code=500, detail=commit.stderr)
+    push = run(["git", "push"], cwd=VAULT_PATH)
+    if push.exit_code != 0:
+        raise HTTPException(status_code=500, detail=push.stderr)
+    return push
 
 
 @app.post("/ingest-commit")
