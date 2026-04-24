@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="Nexus Pipeline API", version="0.1.0")
+_write_lock = threading.Lock()
 
 VAULT_PATH = Path("/home/raphonzius/obsidian-nexus")
 SCRIPTS_DIR = Path("/home/raphonzius/llm-orchestration/scripts")
@@ -280,18 +282,18 @@ def ingest_write_atlas(req: IngestWriteRequest) -> IngestWriteResponse:
             action="merged",
         )
 
-    # Create new atlas note
-    slug = _slugify(req.metadata.title)
-    atlas_path = atlas_dir / f"{slug}.md"
+    # Create new atlas note — lock prevents concurrent collision
+    with _write_lock:
+        slug = _slugify(req.metadata.title)
+        atlas_path = atlas_dir / f"{slug}.md"
 
-    # If collision, add suffix
-    i = 2
-    while atlas_path.exists():
-        atlas_path = atlas_dir / f"{slug}-{i}.md"
-        i += 1
+        i = 2
+        while atlas_path.exists():
+            atlas_path = atlas_dir / f"{slug}-{i}.md"
+            i += 1
 
-    content = _format_frontmatter(req.metadata, req.clip_path, req.model) + req.body.strip() + "\n"
-    atlas_path.write_text(content, encoding="utf-8")
+        content = _format_frontmatter(req.metadata, req.clip_path, req.model) + req.body.strip() + "\n"
+        atlas_path.write_text(content, encoding="utf-8")
 
     rel_path = atlas_path.relative_to(VAULT_PATH).as_posix()
     return IngestWriteResponse(

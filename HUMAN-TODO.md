@@ -45,6 +45,7 @@
 - [ ] Wire router → tier dispatch in n8n Flow 1 (Phase C work)
 - [ ] Add budget guard: if daily Claude token usage > threshold, force tier 2 fallback
 - [ ] Log every routed call to `_system/log.md` in vault with tier + token count
+- [ ] **Post-Tailscale:** route metadata extraction (`gemma4:e4b`) from n8n (desktop) → ultrabook Ollama. Frees desktop GPU for tier 2 work. Currently pinned to desktop because n8n runs there.
 
 ### Step 4 — Measure burn rate
 
